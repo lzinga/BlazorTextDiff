@@ -1,0 +1,33 @@
+﻿@page "/"
+@inject HttpClient Http
+
+
+<h1>Static</h1>
+<TextDiff OldText="Old Text" NewText="New Text" CollapseContent="@collapsible">
+    <Header>
+        <h6 style="padding: 12px; margin: 0px;">Test</h6>
+    </Header>
+</TextDiff>
+<br />
+<h1>Async</h1>
+<TextDiff OldText="@left" NewText="@right" CollapseContent="@collapsible">
+    <Header>
+        <h6 style="padding: 12px; margin: 0px;">@context.Additions Additions @context.Modifications Modifications and @context.Deletions Deletions</h6>
+        <button type="button" @onclick="@(() => collapsible = !collapsible)">Toggle Collapse</button>
+    </Header>
+</TextDiff>
+
+@code {
+
+
+    string left = "";
+    string right = "";
+    bool collapsible = true;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        left = await Http.GetStringAsync("https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/fe20c3e645aaa20e40cecc615037d51a34f9cb4a/README.md");
+        right = await Http.GetStringAsync("https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/c763193e8a5bddfbec097c7b96ea0f875eedb01b/README.md");
+    }
+}

@@ -1,0 +1,48 @@
+﻿@using DiffPlex.DiffBuilder.Model;
+
+@if (!string.IsNullOrEmpty(Model.Text))
+{
+    string spaceValue = "\u00B7";
+    string tabValue = "\u00B7\u00B7";
+
+
+    if (Model.Type == ChangeType.Deleted || Model.Type == ChangeType.Inserted || Model.Type == ChangeType.Unchanged)
+    {
+        if (ShowWhiteSpace)
+        {
+            @((MarkupString)Model.Text.Replace(" ", spaceValue).Replace("\t", tabValue))
+        }
+        else
+        {
+            @((MarkupString)Model.Text)
+        }
+
+    }
+    else if (Model.Type == ChangeType.Modified)
+    {
+        foreach (var character in Model.SubPieces)
+        {
+            if (character.Type == ChangeType.Imaginary) { continue; }
+
+            <span class="@character.Type.ToString().ToLower()-character">
+                @if (ShowWhiteSpace)
+                {
+                    @character.Text.Replace(" ", spaceValue.ToString())
+                }
+                else
+                {
+                    @character.Text
+                }
+            </span>
+        }
+    }
+
+}
+
+
+@code {
+    [CascadingParameter(Name = "ShowWhiteSpace")]
+    bool ShowWhiteSpace { get; set; }
+
+    [Parameter] public DiffPiece Model { get; set; }
+}
