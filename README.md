@@ -1,5 +1,5 @@
 # Blazor Text Diff
-A component to display side by side text diff using the [DiffPlex](https://github.com/mmanela/diffplex) library.
+A component to display side by side text diff using the [DiffPlex](https://github.com/mmanela/diffplex) library. The CSS can probably be cleaned up a lot.
 
 Here is an image showing some example data from the sample folder.
 ![Diff](https://i.imgur.com/nfo1OzH.png)
