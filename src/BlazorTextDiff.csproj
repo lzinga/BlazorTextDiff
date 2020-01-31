@@ -5,6 +5,12 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <AssemblyName>BlazorTextDiff</AssemblyName>
     <RootNamespace>BlazorTextDiff</RootNamespace>
+    <Version>0.0.1</Version>
+    <Authors>lzinga</Authors>
+    <PackageProjectUrl>https://github.com/lzinga/BlazorTextDiff</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/lzinga/BlazorTextDiff</RepositoryUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageTags>Diff, TextDiff, Blazor</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

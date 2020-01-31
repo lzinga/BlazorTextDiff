@@ -91,7 +91,6 @@
         if(pane.Id != null)
         {
             paneHeight = await JSRuntime.InvokeAsync<int>("blazorTextDiff.getHeight", pane);
-            Console.WriteLine(paneHeight);
         }
     }
 
