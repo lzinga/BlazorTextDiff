@@ -10,13 +10,12 @@
     {
         if (ShowWhiteSpace)
         {
-            @((MarkupString)Model.Text.Replace(" ", spaceValue).Replace("\t", tabValue))
+            @((MarkupString)Model.Text.Replace(" ", spaceValue).Replace("\t", tabValue).Trim())
         }
         else
         {
-            @((MarkupString)Model.Text)
+            @((MarkupString)Model.Text.Trim())
         }
-
     }
     else if (Model.Type == ChangeType.Modified)
     {
@@ -24,16 +23,7 @@
         {
             if (character.Type == ChangeType.Imaginary) { continue; }
 
-            <span class="@character.Type.ToString().ToLower()-character">
-                @if (ShowWhiteSpace)
-                {
-                    @character.Text.Replace(" ", spaceValue.ToString())
-                }
-                else
-                {
-                    @character.Text
-                }
-            </span>
+            <span class="@character.Type.ToString().ToLower()-character"> @(ShowWhiteSpace ? character.Text.Replace(" ", spaceValue.ToString()).Trim() : character.Text.Trim())</span>
         }
     }
 

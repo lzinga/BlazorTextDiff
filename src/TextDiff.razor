@@ -6,8 +6,7 @@
 
 <div class="diff-container">
     <div class="diff-header">
-        @Header((Additions, Deletions, Modifications))
-        ( @paneHeight )
+        @Header(new DiffStats(diff.NewText))
     </div>
     <CascadingValue Value="ShowWhiteSpace" Name="ShowWhiteSpace">
         <CascadingValue Value="CollapseContent" Name="CollapseContent">
@@ -50,35 +49,12 @@
     /// The text after any changes.
     /// </summary>
     [Parameter] public string NewText { get; set; }
-    [Parameter] public RenderFragment<(int Additions, int Deletions, int Modifications)> Header { get; set; }
+    [Parameter] public RenderFragment<DiffStats> Header { get; set; }
 
     private SideBySideDiffModel diff;
     private ElementReference pane;
     private int paneHeight;
 
-    private int Additions
-    {
-        get
-        {
-            return diff.NewText.Lines.Count(x => x.Type == ChangeType.Inserted);
-        }
-    }
-
-    private int Modifications
-    {
-        get
-        {
-            return diff.NewText.Lines.Count(x => x.Type == ChangeType.Modified);
-        }
-    }
-
-    private int Deletions
-    {
-        get
-        {
-            return diff.NewText.Lines.Count(x => x.Type == ChangeType.Deleted);
-        }
-    }
 
     /// <summary>
     /// When parameters set update the component.
