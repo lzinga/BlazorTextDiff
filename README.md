@@ -1,13 +1,12 @@
 # Blazor Text Diff
-A component to display side by side text diff using the [DiffPlex](https://github.com/mmanela/diffplex) library. The CSS can probably be cleaned up a lot.
+A component to display side by side text diff using the [DiffPlex](https://github.com/mmanela/diffplex) library. There is probably some issues that I have looked over so if you notice one please submit an issue or do a pull request!
 
 
 [![publish to nuget](https://github.com/lzinga/BlazorTextDiff/workflows/publish%20to%20nuget/badge.svg)![Nuget](https://img.shields.io/nuget/v/BlazorTextDiff)](https://www.nuget.org/packages/BlazorTextDiff)
 
 
-
-Here is an image showing some example data from the sample folder.
-![Diff](https://i.imgur.com/nfo1OzH.png)
+![Static Diff](https://i.imgur.com/t0nJPeZ.png)
+![Async Diff](https://i.imgur.com/lzjfjhF.png)
 
 # Installation
 You will need to add the nuget package DiffPlex into your project for this to work. An example project can be found in the [Samples Folder](https://github.com/lzinga/BlazorTextDiff/tree/master/samples/BlazorTextDiff.Web) for implementation.
