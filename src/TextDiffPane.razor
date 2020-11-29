@@ -9,7 +9,7 @@
                     @((MarkupString)(diffLine.Position.HasValue ? diffLine.Position.ToString() : "&nbsp;"))
                 </td>
                 <td class="line @diffLine.Type.ToString().ToLower()-line">
-                    <span class="line-text">
+                    <span class="line-text" style="white-space: pre-wrap;">
                         <TextDiffLine Model="diffLine"></TextDiffLine>
                     </span>
                 </td>
