@@ -23,7 +23,7 @@
         {
             if (character.Type == ChangeType.Imaginary) { continue; }
 
-            <span style="white-space: pre-wrap;" class="@character.Type.ToString().ToLower()-character">@(ShowWhiteSpace ? character.Text.Replace(" ", spaceValue.ToString()) : character.Text)</span>
+            <span class="@character.Type.ToString().ToLower()-character">@(ShowWhiteSpace ? character.Text.Replace(" ", spaceValue.ToString()) : character.Text)</span>
         }
     }
 

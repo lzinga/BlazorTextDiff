@@ -15,7 +15,7 @@
 
    <CascadingValue Value="@ShowWhiteSpace" Name="@nameof(ShowWhiteSpace)">
       <CascadingValue Value="@CollapseContent" Name="@nameof(CollapseContent)">
-         <div class="diff-panes" @ref="pane" style="@(CollapseContent ? $"max-height: {MaxHeight}px; overflow: hidden;" : "max-height: auto; overflow: auto;")">
+         <div class="diff-panes" @ref="pane" style="@(CollapseContent ? $"max-height: {MaxHeight}px; overflow: auto;" : "max-height: auto; overflow: auto;")">
             <div class="diff-pane">
                <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"></TextDiffPane>
             </div>
