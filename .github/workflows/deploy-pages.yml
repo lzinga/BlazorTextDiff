@@ -58,15 +58,23 @@ jobs:
         dotnet restore
 
     - name: Build Blazor WebAssembly
-      run: dotnet publish BlazorTextDiff.Web/BlazorTextDiff.Web.csproj -c Release -o dist/ -p:Version=${{ steps.version.outputs.version }}
-
-    - name: Copy index.html to 404.html
-      run: cp dist/wwwroot/index.html dist/wwwroot/404.html
+      run: dotnet publish BlazorTextDiff.Web/BlazorTextDiff.Web.csproj -c Release -o dist/ -p:Version=${{ steps.version.outputs.version }} -p:PublishUrl=/BlazorTextDiff/
 
     - name: Add .nojekyll file
       run: touch dist/wwwroot/.nojekyll
 
-    - name: Fix service-worker-assets.js hashes
+    - name: Add version info to site
+      working-directory: dist/wwwroot
+      run: |
+        BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+        echo "{\"version\":\"${{ steps.version.outputs.version }}\",\"buildDate\":\"$BUILD_DATE\",\"commit\":\"${{ github.sha }}\",\"run\":\"${{ github.run_id }}\"}" > version.json
+        sed -i '/<\/head>/i \ \ \ \ <!-- Build: ${{ steps.version.outputs.version }} | Commit: ${{ github.sha }} | Run: ${{ github.run_id }} -->' index.html
+
+    - name: Change base-tag in index.html for GitHub Pages
+      working-directory: dist/wwwroot
+      run: sed -i 's|<base href="/" />|<base href="/BlazorTextDiff/" />|g' index.html
+
+    - name: Fix service-worker-assets.js hashes (if exists)
       working-directory: dist/wwwroot
       run: |
         jsFile=$(find . -name 'service-worker-assets.js' | head -1)
@@ -75,24 +83,13 @@ jobs:
           sed -i 's|"hash": "[^"]*"|"hash": "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="|g' "$jsFile"
         fi
 
-    - name: Add version info to site
-      working-directory: dist/wwwroot
-      run: |
-        echo '{"version":"${{ steps.version.outputs.version }}","buildDate":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","commit":"${{ github.sha }}","run":"${{ github.run_id }}"}' > version.json
-        echo "<!-- Build: ${{ steps.version.outputs.version }} | Commit: ${{ github.sha }} | Run: ${{ github.run_id }} -->" >> index.html
-
-    - name: Change base-tag in index.html from / to BlazorTextDiff
-      working-directory: dist/wwwroot
-      run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorTextDiff\/" \/>/g' index.html
-
-    - name: copy index.html to 404.html
+    - name: Copy index.html to 404.html for SPA routing
       working-directory: dist/wwwroot
       run: cp index.html 404.html
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        name: github-pages-${{ steps.version.outputs.version }}
         path: dist/wwwroot
 
   deploy:
