@@ -34,6 +34,9 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Install .NET workloads
+      run: dotnet workload install wasm-tools
+
     - name: Cache NuGet packages
       uses: actions/cache@v4
       with:
@@ -61,7 +64,9 @@ jobs:
         cat ${{ env.PROJECT_PATH }} | grep -A1 -B1 "<Version>"
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: |
+        dotnet workload restore
+        dotnet restore
 
     - name: Build solution
       run: dotnet build --no-restore --configuration Release
