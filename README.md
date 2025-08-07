@@ -1,15 +1,55 @@
-# Blazor Text Diff
-A component to display side by side text diff using the [DiffPlex](https://github.com/mmanela/diffplex) library. There is probably some issues that I have looked over so if you notice one please submit an issue or do a pull request!
+# BlazorTextDiff 🔍
 
+A modern Blazor component for displaying side-by-side text differences with syntax highlighting and advanced comparison features. Built on top of the powerful [DiffPlex](https://github.com/mmanela/diffplex) library.
+
+## 🚀 Features
+
+- **Side-by-side comparison** with clear visual indicators
+- **Syntax highlighting** for better readability
+- **Ignore case and whitespace** options
+- **Async diff processing** for large texts
+- **Customizable headers** with diff statistics
+- **Responsive design** that works on all devices
+- **Easy integration** with existing Blazor applications
+
+## 📊 Status
 
 [![Build and Publish Packages](https://github.com/lzinga/BlazorTextDiff/actions/workflows/publish-packages.yml/badge.svg)](https://github.com/lzinga/BlazorTextDiff/actions/workflows/publish-packages.yml)
+[![Deploy to GitHub Pages](https://github.com/lzinga/BlazorTextDiff/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/lzinga/BlazorTextDiff/actions/workflows/deploy-pages.yml)
+[![NuGet](https://img.shields.io/nuget/v/BlazorTextDiff.svg)](https://www.nuget.org/packages/BlazorTextDiff/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/BlazorTextDiff.svg)](https://www.nuget.org/packages/BlazorTextDiff/)
 
+## 🎮 Live Demo
+
+Try the interactive demo: [https://lzinga.github.io/BlazorTextDiff/](https://lzinga.github.io/BlazorTextDiff/)
+
+## 📸 Screenshots
 
 ![Static Diff](https://i.imgur.com/t0nJPeZ.png)
-![Async Diff](https://i.imgur.com/lzjfjhF.png)
+*Basic text comparison showing additions, deletions, and modifications*
 
-# Installation
-You will need to add the nuget package DiffPlex into your project for this to work. An example project can be found in the [Samples Folder](https://github.com/lzinga/BlazorTextDiff/tree/master/samples/BlazorTextDiff.Web) for implementation.
+![Async Diff](https://i.imgur.com/lzjfjhF.png)
+*Async processing for large text comparisons*
+
+## 📦 Installation
+
+Install the NuGet package:
+
+```bash
+dotnet add package BlazorTextDiff
+```
+
+You'll also need the DiffPlex library:
+
+```bash
+dotnet add package DiffPlex
+```
+
+## ⚙️ Setup
+
+### 1. Configure Services
+
+Add the required services to your `Program.cs`:
 
 ```csharp
 // Program.cs
@@ -17,7 +57,7 @@ public static async Task Main(string[] args)
 {
     var builder = WebAssemblyHostBuilder.CreateDefault(args);
     
-    // These must be injected into your application to supply the component with its diff checking.
+    // Register BlazorTextDiff dependencies
     builder.Services.AddScoped<ISideBySideDiffBuilder, SideBySideDiffBuilder>();
     builder.Services.AddScoped<IDiffer, Differ>();
 
@@ -27,36 +67,101 @@ public static async Task Main(string[] args)
 }
 ```
 
+### 2. Include Styles and Scripts
+
+Add to your `index.html` or `_Host.cshtml`:
+
 ```html
-<!-- Index.html -->
+<!-- Required CSS -->
 <link href="_content/BlazorTextDiff/css/BlazorDiff.css" rel="stylesheet" />
+
+<!-- Required JavaScript -->
 <script src="_content/BlazorTextDiff/js/BlazorTextDiff.js"></script>
 ```
 
+## 🎯 Usage
 
-# Usage
+### Basic Comparison
+
+```html
+<TextDiff OldText="@oldText" NewText="@newText" />
+```
+
+### Advanced Features
+
 ```html
 <TextDiff
-
-  <!-- The left side of the comparison -->
-  OldText="Old Text"
-  
-  <!-- The right side of the comparison -->
-  NewText="New Text"
-
-  <!-- Determines if the div containing the diffs should be collapsed if there is a lot of data. -->
-  <!-- There is currently an issue where the toggling doesn't work accurately with the js interop. -->
-  CollapseContent="true"
-  
-  <!-- Converts space values into \u00B7 and tab values into \u00B7\u00B7 -->
-  ShowWhiteSpace="true"
-
->
+    OldText="@oldText"
+    NewText="@newText"
+    CollapseContent="true"
+    ShowWhiteSpace="true"
+    IgnoreCase="true"
+    IgnoreWhiteSpace="false">
+    
     <Header>
-      <!-- Context Variables -->
-      <!-- @context.Additions -->
-      <!-- @context.Modifications -->
-      <!-- @context.Deletions -->
+        <div class="diff-stats">
+            <span class="badge bg-success">+@context.Additions</span>
+            <span class="badge bg-warning">~@context.Modifications</span>
+            <span class="badge bg-danger">-@context.Deletions</span>
+        </div>
     </Header>
 </TextDiff>
 ```
+
+### Async Processing
+
+For large texts, use async processing:
+
+```csharp
+@code {
+    private string oldText = "";
+    private string newText = "";
+    private bool isProcessing = false;
+
+    private async Task ProcessLargeDiff()
+    {
+        isProcessing = true;
+        // Your async logic here
+        await Task.Delay(100); // Simulate processing
+        isProcessing = false;
+    }
+}
+```
+
+## 🔧 Component Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `OldText` | `string` | `""` | The original text (left side) |
+| `NewText` | `string` | `""` | The modified text (right side) |
+| `CollapseContent` | `bool` | `false` | Collapse large diff sections |
+| `ShowWhiteSpace` | `bool` | `false` | Visualize spaces and tabs |
+| `IgnoreCase` | `bool` | `false` | Ignore case differences |
+| `IgnoreWhiteSpace` | `bool` | `false` | Ignore whitespace differences |
+
+## 🎨 Customization
+
+The component uses CSS classes that you can override:
+
+```css
+.diff-container { /* Main container */ }
+.diff-line-added { /* Added lines */ }
+.diff-line-deleted { /* Deleted lines */ }
+.diff-line-modified { /* Modified lines */ }
+.diff-line-unchanged { /* Unchanged lines */ }
+```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [DiffPlex](https://github.com/mmanela/diffplex) - The core diffing library
+- [Blazor](https://blazor.net/) - The web framework that makes this possible
+
+---
+
+<div align="center">
+  Made with ❤️ for the Blazor community
+</div>
