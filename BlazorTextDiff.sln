@@ -3,13 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorTextDiff", "src\BlazorTextDiff.csproj", "{BD68CFEA-CA90-4513-9B45-F56891BB82CD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorTextDiff", "BlazorTextDiff\BlazorTextDiff.csproj", "{8268065C-5552-47C2-B8DE-38EFF8A0F0E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorTextDiff.Web", "samples\BlazorTextDiff.Web\BlazorTextDiff.Web.csproj", "{6AEC9F46-B137-48E0-BC43-C62E339B5483}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorTextDiffCore", "BlazorTextDiffCore\BlazorTextDiffCore.csproj", "{8268065C-5552-47C2-B8DE-38EFF8A0F0E8}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorTextDiffCore.Web", "BlazorTextDiffCore.Web\BlazorTextDiffCore.Web.csproj", "{3D074FDC-FD1B-4E1E-9A9E-030727444A66}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorTextDiff.Web", "BlazorTextDiff.Web\BlazorTextDiff.Web.csproj", "{3D074FDC-FD1B-4E1E-9A9E-030727444A66}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,14 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{BD68CFEA-CA90-4513-9B45-F56891BB82CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BD68CFEA-CA90-4513-9B45-F56891BB82CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BD68CFEA-CA90-4513-9B45-F56891BB82CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{BD68CFEA-CA90-4513-9B45-F56891BB82CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6AEC9F46-B137-48E0-BC43-C62E339B5483}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6AEC9F46-B137-48E0-BC43-C62E339B5483}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6AEC9F46-B137-48E0-BC43-C62E339B5483}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6AEC9F46-B137-48E0-BC43-C62E339B5483}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8268065C-5552-47C2-B8DE-38EFF8A0F0E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8268065C-5552-47C2-B8DE-38EFF8A0F0E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8268065C-5552-47C2-B8DE-38EFF8A0F0E8}.Release|Any CPU.ActiveCfg = Release|Any CPU

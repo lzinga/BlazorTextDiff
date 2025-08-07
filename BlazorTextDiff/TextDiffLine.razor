@@ -1,0 +1,26 @@
+﻿@using DiffPlex.DiffBuilder.Model;
+
+@if (!string.IsNullOrEmpty(Model?.Text))
+{
+    @if (Model.Type is ChangeType.Deleted or ChangeType.Inserted or ChangeType.Unchanged)
+    {
+        @Model.Text
+    }
+    else if (Model.Type == ChangeType.Modified)
+    {
+        @if (Model.SubPieces is not null)
+        {
+            @foreach (var character in Model.SubPieces)
+            {
+                @if (character.Type == ChangeType.Imaginary) { continue; }
+
+                var cssClass = $"{character.Type.ToString().ToLower()}-character";
+                <span class="@cssClass">@character.Text</span>
+            }
+        }
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public DiffPiece Model { get; set; } = default!;
+}

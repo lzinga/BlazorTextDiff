@@ -1,0 +1,210 @@
+﻿@page "/async"
+@inject HttpClient Http
+
+<PageTitle>Async Demo - BlazorTextDiff</PageTitle>
+
+<h1>Async Content Loading Demo</h1>
+<p>This demo shows how to load and compare content from external sources asynchronously. Perfect for comparing files from APIs, repositories, or remote services.</p>
+
+<div class="mb-3">
+    <button type="button" class="btn @(isCollapsible ? "btn-primary" : "btn-outline-primary")" @onclick="ToggleCollapse" disabled="@(isLoading || hasError || showInfiniteLoading)">
+        @(isCollapsible ? "✓ Collapsible Content" : "Expanded Content")
+    </button>
+    <button type="button" class="btn btn-outline-secondary ms-2" @onclick="LoadContentAsync" disabled="@(isLoading || showInfiniteLoading)">
+        Reload Content
+    </button>
+    <button type="button" class="btn @(showInfiniteLoading ? "btn-danger" : "btn-outline-info") ms-2" @onclick="ToggleInfiniteLoading" disabled="@isLoading">
+        @if (showInfiniteLoading)
+        {
+            <text>Stop Loading Demo</text>
+        }
+        else
+        {
+            <text>Show Loading Demo</text>
+        }
+    </button>
+</div>
+
+@if (isLoading || showInfiniteLoading)
+{
+    <div class="diff-loading-overlay">
+        <div class="diff-loading-content">
+            <div class="loading-spinner loading-spinner-lg @(isLoading ? "loading-pulse" : "") mb-3" role="status" aria-label="Loading content"></div>
+            <h5>Loading Content...</h5>
+            <small>Fetching README files from different commits of a GitHub repository.<br>
+                   This may take a few moments depending on network speed.</small>
+        </div>
+    </div>
+}
+else if (hasError)
+{
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Error Loading Content</h4>
+        <p>Failed to load the remote content. This could be due to:</p>
+        <ul>
+            <li>Network connectivity issues</li>
+            <li>Repository or file not accessible</li>
+            <li>Request timeout (30 second limit)</li>
+            <li>CORS restrictions</li>
+        </ul>
+        <button type="button" class="btn btn-outline-danger" @onclick="LoadContentAsync">
+            <i class="oi oi-reload me-1"></i> Retry Loading
+        </button>
+    </div>
+}
+else
+{
+    <div class="alert alert-success">
+        <strong>Content Loaded Successfully!</strong> Comparing two versions of the same README file from different Git commits.
+    </div>
+
+    @if (isDiffProcessing && !showInfiniteLoading)
+    {
+        <div class="diff-loading-overlay">
+            <div class="diff-loading-content">
+                <div class="loading-spinner loading-spinner-lg mb-3" role="status" aria-label="Processing diff"></div>
+                <h5>Processing Diff...</h5>
+                <small>Analyzing differences between the two versions.</small>
+            </div>
+        </div>
+    }
+    else if (!showInfiniteLoading)
+    {
+        <TextDiff OldText="@leftContent" NewText="@rightContent" CollapseContent="@isCollapsible">
+            <Header>
+                <div style="padding: 12px; margin: 0px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+                    <h6 class="mb-2">
+                        README.md Comparison from
+                        <a href="https://github.com/lzinga/TTTWeightedTraitorSelection" target="_blank" rel="noopener noreferrer">
+                            TTTWeightedTraitorSelection Repository
+                        </a>
+                    </h6>
+                    <div class="diff-stats-container">
+                        <span class="diff-stats-badge warning">@($"{context.LineModificationCount} Line Modifications")</span>
+                        <span class="diff-stats-badge danger">@($"{context.LineDeletionCount} Line Deletions")</span>
+                        <span class="diff-stats-badge success">@($"{context.LineAdditionCount} Line Additions")</span>
+                        <span class="diff-stats-badge info">@($"{context.WordModificationCount} Word Modifications")</span>
+                        <span class="diff-stats-badge warning">@($"{context.WordDeletionCount} Word Deletions")</span>
+                        <span class="diff-stats-badge success">@($"{context.WordAdditionCount} Word Additions")</span>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Comparing commit <code>fe20c3e</code> (older) vs <code>c763193</code> (newer)
+                        </small>
+                    </div>
+                </div>
+            </Header>
+        </TextDiff>
+    }
+}
+
+<h2 class="mt-4">Loading States Demo</h2>
+<div class="alert alert-info">
+    <h6><strong>Interactive Loading Demo</strong></h6>
+    <p>Use the <strong>"Show Loading Demo"</strong> button above to see the loading state in action. This demonstrates:</p>
+    <ul class="mb-0">
+        <li><strong>Smooth Animation:</strong> Custom spinner with gentle rotation (1.5s cycle vs Bootstrap's 1s)</li>
+        <li><strong>Visual Hierarchy:</strong> Proper loading overlay with informative content</li>
+        <li><strong>Accessibility:</strong> Screen reader friendly with proper ARIA labels</li>
+        <li><strong>Responsive Design:</strong> Adapts to different screen sizes</li>
+    </ul>
+</div>
+
+<h2 class="mt-4">How Async Loading Works</h2>
+<div class="row">
+    <div class="col-md-6">
+        <h5>Implementation Features</h5>
+        <ul>
+            <li><strong>Concurrent Loading:</strong> Both files load simultaneously using <code>Task.WhenAll</code></li>
+            <li><strong>Timeout Protection:</strong> 30-second timeout prevents hanging requests</li>
+            <li><strong>Error Handling:</strong> Graceful fallback with retry functionality</li>
+            <li><strong>Loading States:</strong> Visual feedback during async operations</li>
+            <li><strong>Cancellation Support:</strong> Uses <code>CancellationTokenSource</code></li>
+        </ul>
+    </div>
+    <div class="col-md-6">
+        <h5>Use Cases</h5>
+        <ul>
+            <li><strong>Git Repositories:</strong> Compare files across commits</li>
+            <li><strong>API Responses:</strong> Compare different API versions</li>
+            <li><strong>Remote Files:</strong> Load content from URLs or cloud storage</li>
+            <li><strong>Database Content:</strong> Compare stored documents or configurations</li>
+            <li><strong>Real-time Data:</strong> Compare live vs cached content</li>
+        </ul>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h6><strong>Code Example</strong></h6>
+    <p>This demo fetches README files from two different commits:</p>
+    <div class="bg-light p-2 mt-2" style="font-family: monospace; font-size: 0.9em;">
+        <div><strong>Older Version:</strong> <code>fe20c3e645aaa20e40cecc615037d51a34f9cb4a</code></div>
+        <div><strong>Newer Version:</strong> <code>c763193e8a5bddfbec097c7b96ea0f875eedb01b</code></div>
+    </div>
+</div>
+
+@code {
+    private string leftContent = string.Empty;
+    private string rightContent = string.Empty;
+    private bool isCollapsible = true;
+    private bool isLoading = true;
+    private bool isDiffProcessing = false;
+    private bool hasError = false;
+    private bool showInfiniteLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContentAsync();
+    }
+
+    private async Task LoadContentAsync()
+    {
+        isLoading = true;
+        hasError = false;
+        isDiffProcessing = false;
+        StateHasChanged();
+
+        try
+        {
+            // Use HttpClient with timeout for better user experience
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            
+            var leftTask = Http.GetStringAsync("https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/fe20c3e645aaa20e40cecc615037d51a34f9cb4a/README.md", cts.Token);
+            var rightTask = Http.GetStringAsync("https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/c763193e8a5bddfbec097c7b96ea0f875eedb01b/README.md", cts.Token);
+
+            await Task.WhenAll(leftTask, rightTask);
+
+            leftContent = await leftTask;
+            rightContent = await rightTask;
+            
+            // Show diff processing state briefly to demonstrate the loading state
+            isLoading = false;
+            isDiffProcessing = true;
+            StateHasChanged();
+            
+            // Simulate brief processing time for diff calculation
+            await Task.Delay(500);
+            isDiffProcessing = false;
+        }
+        catch (Exception)
+        {
+            hasError = true;
+            leftContent = string.Empty;
+            rightContent = string.Empty;
+        }
+        finally
+        {
+            isLoading = false;
+            isDiffProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleCollapse() => isCollapsible = !isCollapsible;
+
+    private void ToggleInfiniteLoading()
+    {
+        showInfiniteLoading = !showInfiniteLoading;
+        StateHasChanged();
+    }
+}

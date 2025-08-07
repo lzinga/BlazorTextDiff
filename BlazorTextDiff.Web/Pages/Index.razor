@@ -1,0 +1,139 @@
+﻿@page "/"
+@inject HttpClient Http
+
+<PageTitle>BlazorTextDiff Demo</PageTitle>
+
+<h1>BlazorTextDiff General Features Demo</h1>
+<p>This demo showcases the core features of the BlazorTextDiff component including content collapsing, case sensitivity, and whitespace handling options.</p>
+
+<div class="mb-3">
+    <div class="btn-group me-2" role="group">
+        <button type="button" class="btn @(isCollapsible ? "btn-primary" : "btn-outline-primary")" @onclick="ToggleCollapse">
+            @(isCollapsible ? "✓ Collapsible Content" : "Expanded Content")
+        </button>
+    </div>
+    <div class="btn-group me-2" role="group">
+        <button type="button" class="btn @(ignoreCase ? "btn-success" : "btn-outline-success")" @onclick="ToggleIgnoreCase">
+            @(ignoreCase ? "✓ Ignore Case Enabled" : "Ignore Case Disabled")
+        </button>
+    </div>
+    <div class="btn-group" role="group">
+        <button type="button" class="btn @(ignoreWhiteSpace ? "btn-warning" : "btn-outline-warning")" @onclick="ToggleIgnoreWhiteSpace">
+            @(ignoreWhiteSpace ? "✓ Ignore Whitespace Enabled" : "Ignore Whitespace Disabled")
+        </button>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <strong>Current Configuration:</strong>
+    <ul class="mb-0 mt-2">
+        <li><strong>Content:</strong> @(isCollapsible ? "Collapsible (unchanged sections can be collapsed)" : "Fully expanded (all content visible)")</li>
+        <li><strong>Case Sensitivity:</strong> @(ignoreCase ? "Case differences are ignored" : "Case differences are detected")</li>
+        <li><strong>Whitespace:</strong> @(ignoreWhiteSpace ? "Whitespace differences are ignored" : "Whitespace differences are detected")</li>
+    </ul>
+</div>
+
+<TextDiff OldText="@leftText" NewText="@rightText" CollapseContent="@isCollapsible"
+          IgnoreCase="@ignoreCase" IgnoreWhiteSpace="@ignoreWhiteSpace">
+   <Header>
+      <div style="padding: 12px; margin: 0px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+         <h6 class="mb-2">Harry Potter Text Comparison</h6>
+         <div class="diff-stats-container">
+            <span class="diff-stats-badge warning">@($"{context.LineModificationCount} Line Modifications")</span>
+            <span class="diff-stats-badge danger">@($"{context.LineDeletionCount} Line Deletions")</span>
+            <span class="diff-stats-badge success">@($"{context.LineAdditionCount} Line Additions")</span>
+            <span class="diff-stats-badge info">@($"{context.WordModificationCount} Word Modifications")</span>
+            <span class="diff-stats-badge warning">@($"{context.WordDeletionCount} Word Deletions")</span>
+            <span class="diff-stats-badge success">@($"{context.WordAdditionCount} Word Additions")</span>
+         </div>
+         <div class="mt-2">
+            <small class="text-muted">
+               This sample includes character changes, word replacements, whitespace differences, and code formatting variations.
+            </small>
+         </div>
+      </div>
+   </Header>
+</TextDiff>
+
+<h2 class="mt-4">Component Features</h2>
+<div class="row">
+    <div class="col-md-4">
+        <h5><span class="badge bg-primary">Content Collapsing</span></h5>
+        <ul>
+            <li><strong>Enabled:</strong> Unchanged sections can be collapsed for better focus</li>
+            <li><strong>Disabled:</strong> All content is always visible</li>
+            <li>Improves readability for large texts</li>
+            <li>Interactive expand/collapse controls</li>
+        </ul>
+    </div>
+    <div class="col-md-4">
+        <h5><span class="badge bg-success">Case Sensitivity</span></h5>
+        <ul>
+            <li><strong>Enabled:</strong> "Hello" vs "hello" shows as different</li>
+            <li><strong>Disabled:</strong> Case differences are ignored</li>
+            <li>Useful for code vs document comparison</li>
+            <li>Toggleable during runtime</li>
+        </ul>
+    </div>
+    <div class="col-md-4">
+        <h5><span class="badge bg-warning">Whitespace Handling</span></h5>
+        <ul>
+            <li><strong>Enabled:</strong> Spaces, tabs, indentation matter</li>
+            <li><strong>Disabled:</strong> Whitespace differences ignored</li>
+            <li>Critical for code formatting</li>
+            <li>Flexible for document comparison</li>
+        </ul>
+    </div>
+</div>
+
+<h2 class="mt-4">Simple Diff (No Header)</h2>
+<p>Same content without header for comparison. Experiment with the options above to see how they affect the diff output.</p>
+<TextDiff OldText="@leftText" NewText="@rightText" CollapseContent="@isCollapsible"
+          IgnoreCase="@ignoreCase" IgnoreWhiteSpace="@ignoreWhiteSpace" />
+
+<div class="alert alert-secondary mt-4">
+    <h6><strong>Sample Content Information</strong></h6>
+    <p class="mb-0">The text samples above include:</p>
+    <ul class="mb-0 mt-2">
+        <li>Character-level changes (names, numbers, words)</li>
+        <li>Mixed case variations for case sensitivity testing</li>
+        <li>Different indentation and spacing patterns</li>
+        <li>Code snippets with tabs vs spaces</li>
+        <li>XML/HTML tag modifications</li>
+    </ul>
+</div>
+
+@code {
+   private readonly string leftText = @"Mr. and Mrs. Fursley, of number six, Sunset Drive, were proud to say that they were almost perfectly normal. They were the last people you'd expect to be involved in anything weird or mysterious, because they just didn't hold with such nonsense.
+Mr. Fursley was the director of a firm called Brunings, which made hatchets.He was a big, well fed man with no neck, although he did have a very large mustache. Mrs. Fursley was petite and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time bending over garden fences, spying on the neighbors. The Fursley's had a small son called Fudley and in their opinion there was no finer boy anywhere.
+The Dursleys had everything they wanted...
+
+function example() {
+ return 'tabs';
+}
+ 
+<some>
+ <xml1>
+ </xml1>
+</some>";
+
+   private readonly string rightText = @"Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much. They were the last people you'd expect to be involved in anything strange or mysterious, because they just didn't hold with such nonsense.
+Mr. Dursley was the director of a firm called Grunnings, which made drills. He was a big, beefy man with hardly any neck, although he did have a very large mustache. Mrs. Dursley was thin and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time craning over garden fences, spying on the neighbors. The Dursleys had a small son called Dudley and in their opinion there was no finer boy anywhere.
+The  Dursleys  had  everything  they  wanted...
+
+function example() {
+    return 'spaces';
+}
+
+<some>
+    <xml2>
+    </xml2>
+</some>";
+   private bool isCollapsible = true;
+   private bool ignoreCase = false;
+   private bool ignoreWhiteSpace = false;
+
+   private void ToggleCollapse() => isCollapsible = !isCollapsible;
+   private void ToggleIgnoreCase() => ignoreCase = !ignoreCase;
+   private void ToggleIgnoreWhiteSpace() => ignoreWhiteSpace = !ignoreWhiteSpace;
+}

@@ -1,0 +1,187 @@
+name: Build and Publish Packages
+
+on:
+  push:
+    branches: [ master, main ]
+    paths:
+    - 'BlazorTextDiff/**'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+    - 'BlazorTextDiff/**'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  PROJECT_PATH: 'BlazorTextDiff/BlazorTextDiff.csproj'
+  ARTIFACT_NAME: 'BlazorTextDiff-Package'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should-publish: ${{ steps.check-publish.outputs.should-publish }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Cache NuGet packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
+
+    - name: Generate version number
+      id: version
+      run: |
+        # Generate date-based version similar to 2021.4.22.43642
+        UTC_DATE=$(date -u '+%Y.%m.%d')
+        START_OF_DAY=$(date -u -d "today 00:00:00" '+%s')
+        CURRENT_TIME=$(date -u '+%s')
+        SECONDS_SINCE_MIDNIGHT=$(( (CURRENT_TIME - START_OF_DAY) / 2 ))
+        VERSION="$UTC_DATE.$SECONDS_SINCE_MIDNIGHT"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
+    - name: Update project version
+      run: |
+        sed -i "s|<Version>.*</Version>|<Version>${{ steps.version.outputs.version }}</Version>|" ${{ env.PROJECT_PATH }}
+        echo "Updated version in project file to: ${{ steps.version.outputs.version }}"
+        cat ${{ env.PROJECT_PATH }} | grep -A1 -B1 "<Version>"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Run tests
+      run: dotnet test --no-build --configuration Release --verbosity normal
+
+    - name: Pack NuGet package
+      run: dotnet pack ${{ env.PROJECT_PATH }} --no-build --configuration Release --output ./artifacts
+
+    - name: Check if should publish
+      id: check-publish
+      run: |
+        if [[ "${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/main") ]]; then
+          echo "should-publish=true" >> $GITHUB_OUTPUT
+          echo "Will publish packages"
+        else
+          echo "should-publish=false" >> $GITHUB_OUTPUT
+          echo "Will not publish packages (not a push to main/master branch)"
+        fi
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ./artifacts/*.nupkg
+        if-no-files-found: error
+
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: needs.build-and-test.outputs.should-publish == 'true'
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ./artifacts
+
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget push "./artifacts/*.nupkg" \
+          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" \
+          --api-key ${{ secrets.GITHUB_TOKEN }} \
+          --skip-duplicate
+
+  publish-nuget:
+    name: Publish to NuGet.org
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: needs.build-and-test.outputs.should-publish == 'true'
+    
+    steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ./artifacts
+
+    - name: Publish to NuGet.org
+      run: |
+        dotnet nuget push "./artifacts/*.nupkg" \
+          --api-key ${{ secrets.NUGET_API_KEY }} \
+          --source https://api.nuget.org/v3/index.json \
+          --skip-duplicate
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: needs.build-and-test.outputs.should-publish == 'true'
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ env.ARTIFACT_NAME }}
+        path: ./artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ needs.build-and-test.outputs.version }}
+        name: Release v${{ needs.build-and-test.outputs.version }}
+        body: |
+          ## BlazorTextDiff v${{ needs.build-and-test.outputs.version }}
+          
+          ### 📦 Package Information
+          - **Version**: ${{ needs.build-and-test.outputs.version }}
+          - **Built**: ${{ github.run_id }}
+          - **Commit**: ${{ github.sha }}
+          
+          ### 📥 Installation
+          ```bash
+          dotnet add package BlazorTextDiff --version ${{ needs.build-and-test.outputs.version }}
+          ```
+          
+          ### 🔗 Links
+          - [NuGet Package](https://www.nuget.org/packages/BlazorTextDiff/${{ needs.build-and-test.outputs.version }})
+          - [GitHub Package](https://github.com/${{ github.repository }}/packages)
+        files: ./artifacts/*.nupkg
+        draft: false
+        prerelease: false
