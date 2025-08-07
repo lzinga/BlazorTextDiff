@@ -80,18 +80,18 @@ jobs:
     - name: Check if should publish
       id: check-publish
       run: |
-        if [[ "${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/main") ]]; then
+        if [[ ("${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/main")) || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
           echo "should-publish=true" >> $GITHUB_OUTPUT
-          echo "Will publish packages"
+          echo "Will publish packages (triggered by: ${{ github.event_name }})"
         else
           echo "should-publish=false" >> $GITHUB_OUTPUT
-          echo "Will not publish packages (not a push to main/master branch)"
+          echo "Will not publish packages (event: ${{ github.event_name }}, ref: ${{ github.ref }})"
         fi
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}-${{ steps.version.outputs.version }}
         path: ./artifacts/*.nupkg
         if-no-files-found: error
 
@@ -113,7 +113,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}-${{ needs.build-and-test.outputs.version }}
         path: ./artifacts
 
     - name: Publish to GitHub Packages
@@ -138,7 +138,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}-${{ needs.build-and-test.outputs.version }}
         path: ./artifacts
 
     - name: Publish to NuGet.org
@@ -163,7 +163,7 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: ${{ env.ARTIFACT_NAME }}
+        name: ${{ env.ARTIFACT_NAME }}-${{ needs.build-and-test.outputs.version }}
         path: ./artifacts
 
     - name: Create Release

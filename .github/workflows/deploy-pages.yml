@@ -38,6 +38,17 @@ jobs:
     - name: Install .NET workloads
       run: dotnet workload install wasm-tools
 
+    - name: Generate version number
+      id: version
+      run: |
+        UTC_DATE=$(date -u '+%Y.%m.%d')
+        START_OF_DAY=$(date -u -d "today 00:00:00" '+%s')
+        CURRENT_TIME=$(date -u '+%s')
+        SECONDS_SINCE_MIDNIGHT=$(( (CURRENT_TIME - START_OF_DAY) / 2 ))
+        VERSION="$UTC_DATE.$SECONDS_SINCE_MIDNIGHT"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
     - name: Setup Pages
       uses: actions/configure-pages@v5
 
@@ -47,7 +58,7 @@ jobs:
         dotnet restore
 
     - name: Build Blazor WebAssembly
-      run: dotnet publish BlazorTextDiff.Web/BlazorTextDiff.Web.csproj -c Release -o dist/
+      run: dotnet publish BlazorTextDiff.Web/BlazorTextDiff.Web.csproj -c Release -o dist/ -p:Version=${{ steps.version.outputs.version }}
 
     - name: Copy index.html to 404.html
       run: cp dist/wwwroot/index.html dist/wwwroot/404.html
@@ -64,6 +75,12 @@ jobs:
           sed -i 's|"hash": "[^"]*"|"hash": "sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU="|g' "$jsFile"
         fi
 
+    - name: Add version info to site
+      working-directory: dist/wwwroot
+      run: |
+        echo '{"version":"${{ steps.version.outputs.version }}","buildDate":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","commit":"${{ github.sha }}","run":"${{ github.run_id }}"}' > version.json
+        echo "<!-- Build: ${{ steps.version.outputs.version }} | Commit: ${{ github.sha }} | Run: ${{ github.run_id }} -->" >> index.html
+
     - name: Change base-tag in index.html from / to BlazorTextDiff
       working-directory: dist/wwwroot
       run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorTextDiff\/" \/>/g' index.html
@@ -75,6 +92,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
+        name: github-pages-${{ steps.version.outputs.version }}
         path: dist/wwwroot
 
   deploy:
