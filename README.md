@@ -100,9 +100,9 @@ Add to your `index.html` or `_Host.cshtml`:
     
     <Header>
         <div class="diff-stats">
-            <span class="badge bg-success">+@context.Additions</span>
-            <span class="badge bg-warning">~@context.Modifications</span>
-            <span class="badge bg-danger">-@context.Deletions</span>
+            <span class="badge bg-success">+@context.LineAdditionCount</span>
+            <span class="badge bg-warning">~@context.LineModificationCount</span>
+            <span class="badge bg-danger">-@context.LineDeletionCount</span>
         </div>
     </Header>
 </TextDiff>
