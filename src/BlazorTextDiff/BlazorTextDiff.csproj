@@ -15,28 +15,9 @@
 		<Description>A modern Blazor component for displaying text differences</Description>
 	</PropertyGroup>
 
-
 	<ItemGroup>
-		<Content Remove="compilerconfig.json" />
-		<Content Remove="wwwroot\BlazorDiff.scss" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<_ContentIncludedByDefault Remove="wwwroot\css\BlazorDiff.css" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Include="wwwroot\css\BlazorDiff.scss" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Include="compilerconfig.json" />
-	</ItemGroup>
-
-
-	<ItemGroup>
-		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
-		<PackageReference Include="DiffPlex" Version="1.8.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.13" />
+		<PackageReference Include="DiffPlex" Version="1.9.0" />
 	</ItemGroup>
 
 </Project>

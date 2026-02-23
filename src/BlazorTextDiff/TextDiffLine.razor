@@ -1,0 +1,103 @@
+﻿@using DiffPlex.DiffBuilder.Model;
+
+@if (!string.IsNullOrEmpty(Model?.Text))
+{
+    @if (Model.Type == ChangeType.Unchanged)
+    {
+        @Model.Text
+    }
+    else if (Model.SubPieces is not null && Model.SubPieces.Count > 0)
+    {
+        @foreach (var word in GetWords())
+        {
+            @if (!word.HasChanges)
+            {
+                @word.Text
+            }
+            else if (word.IsFullyChanged)
+            {
+                <span class="@word.CharacterCss">@word.Text</span>
+            }
+            else
+            {
+                <span class="@word.WordCss">@foreach (var ch in word.Characters)
+                    {
+                        @if (ch.IsChanged)
+                        {<span class="@ch.CssClass">@ch.Text</span>}
+                        else
+                        {@ch.Text}
+                    }</span>
+            }
+        }
+    }
+    else
+    {
+        @Model.Text
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public DiffPiece Model { get; set; } = default!;
+
+    private sealed record CharInfo(string Text, bool IsChanged, string CssClass);
+
+    private sealed record WordGroup(
+        string Text,
+        List<CharInfo> Characters,
+        bool HasChanges,
+        bool IsFullyChanged,
+        string CharacterCss,
+        string WordCss);
+
+    private List<WordGroup> GetWords()
+    {
+        var words = new List<WordGroup>();
+        var currentChars = new List<CharInfo>();
+
+        foreach (var sub in Model.SubPieces)
+        {
+            if (sub.Type == ChangeType.Imaginary) continue;
+            var text = sub.Text ?? "";
+            if (text.Length == 0) continue;
+
+            var isChanged = sub.Type != ChangeType.Unchanged;
+            var info = new CharInfo(text, isChanged, $"{sub.Type.ToString().ToLower()}-character");
+
+            if (text.All(char.IsWhiteSpace))
+            {
+                if (currentChars.Count > 0)
+                {
+                    words.Add(BuildWord(currentChars));
+                    currentChars = [];
+                }
+                words.Add(BuildWord([info]));
+            }
+            else
+            {
+                currentChars.Add(info);
+            }
+        }
+
+        if (currentChars.Count > 0)
+            words.Add(BuildWord(currentChars));
+
+        return words;
+    }
+
+    private static WordGroup BuildWord(List<CharInfo> chars)
+    {
+        var text = string.Concat(chars.Select(c => c.Text));
+        var changed = chars.Where(c => c.IsChanged).ToList();
+        var hasChanges = changed.Count > 0;
+        var isFullyChanged = changed.Count == chars.Count;
+        var dominantType = changed.FirstOrDefault()?.CssClass.Replace("-character", "") ?? "unchanged";
+
+        return new WordGroup(
+            text,
+            chars,
+            hasChanges,
+            isFullyChanged,
+            $"{dominantType}-character",
+            $"{dominantType}-word");
+    }
+}
