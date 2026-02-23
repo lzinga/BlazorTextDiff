@@ -1,19 +1,11 @@
-name: Build and Publish Packages
+name: Publish Packages
 
 on:
-  push:
-    branches: [ master, main ]
-    paths:
-    - 'BlazorTextDiff/**'
-  pull_request:
-    branches: [ master, main ]
-    paths:
-    - 'BlazorTextDiff/**'
   workflow_dispatch:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  PROJECT_PATH: 'BlazorTextDiff/BlazorTextDiff.csproj'
+  PROJECT_PATH: 'src/BlazorTextDiff/BlazorTextDiff.csproj'
   ARTIFACT_NAME: 'BlazorTextDiff-Package'
 
 jobs:
@@ -80,13 +72,8 @@ jobs:
     - name: Check if should publish
       id: check-publish
       run: |
-        if [[ ("${{ github.event_name }}" == "push" && ("${{ github.ref }}" == "refs/heads/master" || "${{ github.ref }}" == "refs/heads/main")) || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          echo "should-publish=true" >> $GITHUB_OUTPUT
-          echo "Will publish packages (triggered by: ${{ github.event_name }})"
-        else
-          echo "should-publish=false" >> $GITHUB_OUTPUT
-          echo "Will not publish packages (event: ${{ github.event_name }}, ref: ${{ github.ref }})"
-        fi
+        echo "should-publish=true" >> $GITHUB_OUTPUT
+        echo "Will publish packages (manual trigger)"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
