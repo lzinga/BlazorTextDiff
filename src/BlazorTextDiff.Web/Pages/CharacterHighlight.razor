@@ -1,0 +1,94 @@
+@page "/character-highlight"
+
+<PageTitle>Character Highlighting - BlazorTextDiff</PageTitle>
+
+<h1>Character-Level Highlighting</h1>
+<p>Individual changed characters within a line are highlighted with a distinct color, just like Git's inline diff.</p>
+
+<h3>Typo Corrections</h3>
+<TextDiff OldText="@typoOld" NewText="@typoNew">
+    <Header>
+        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <div class="diff-stats-container">
+                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
+                <span class="diff-stats-badge info">@context.WordModificationCount words</span>
+            </div>
+        </div>
+    </Header>
+</TextDiff>
+
+<h3 class="mt-4">Code Refactoring</h3>
+<p>Renamed variables, changed values, and updated method signatures — only the exact characters that differ are indicated.</p>
+<TextDiff OldText="@codeOld" NewText="@codeNew" CollapseContent="true">
+    <Header>
+        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <div class="diff-stats-container">
+                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
+                <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
+                <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
+            </div>
+        </div>
+    </Header>
+</TextDiff>
+
+@code {
+    private const string typoOld = @"The quik brown fox jumpd over the layz dog.
+Programing is the art of writting code.
+Recieve the mesage and procede with causion.
+Definately check for boundry conditions.";
+
+    private const string typoNew = @"The quick brown fox jumped over the lazy dog.
+Programming is the art of writing code.
+Receive the message and proceed with caution.
+Definitely check for boundary conditions.";
+
+    private const string codeOld = @"public class UserService
+{
+    private readonly ILogger _log;
+    private readonly int _maxRetries = 3;
+
+    public UserService(ILogger log)
+    {
+        _log = log;
+    }
+
+    public async Task<User> GetUser(int userId)
+    {
+        _log.Info($""Fetching user {userId}"");
+        var response = await _httpClient.GetAsync($""/api/users/{userId}"");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsAsync<User>();
+    }
+
+    public void DeleteUser(int userId)
+    {
+        _log.Warn($""Deleting user {userId}"");
+        _httpClient.DeleteAsync($""/api/users/{userId}"");
+    }
+}";
+
+    private const string codeNew = @"public class UserService
+{
+    private readonly ILogger _logger;
+    private readonly int _maxRetries = 5;
+
+    public UserService(ILogger logger)
+    {
+        _logger = logger;
+    }
+
+    public async Task<UserDto> GetUserAsync(int userId)
+    {
+        _logger.LogInformation($""Fetching user {userId}"");
+        var response = await _httpClient.GetAsync($""/api/v2/users/{userId}"");
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<UserDto>();
+    }
+
+    public async Task DeleteUserAsync(int userId)
+    {
+        _logger.LogWarning($""Deleting user {userId}"");
+        await _httpClient.DeleteAsync($""/api/v2/users/{userId}"");
+    }
+}";
+}

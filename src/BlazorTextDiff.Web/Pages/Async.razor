@@ -1,0 +1,101 @@
+﻿@page "/async"
+@inject HttpClient Http
+
+<PageTitle>Async Loading - BlazorTextDiff</PageTitle>
+
+<h1>Async Content Loading</h1>
+<p>Load and compare content from remote sources. This example fetches two versions of a README from GitHub.</p>
+
+<div class="mb-3">
+    <button type="button" class="btn btn-sm @(collapseContent ? "btn-primary" : "btn-outline-primary")" @onclick="() => collapseContent = !collapseContent" disabled="@(isLoading || hasError)">
+        @(collapseContent ? "▶ Collapse Unchanged" : "▤ Show All Lines")
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="LoadContentAsync" disabled="@isLoading">
+        ↻ Reload
+    </button>
+</div>
+
+@if (isLoading)
+{
+    <div class="diff-loading-overlay">
+        <div class="diff-loading-content">
+            <div class="loading-spinner loading-spinner-lg loading-pulse mb-3" role="status" aria-label="Loading content"></div>
+            <h5>Loading Content...</h5>
+            <small>Fetching README files from two GitHub commits.</small>
+        </div>
+    </div>
+}
+else if (hasError)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong>Failed to load content.</strong> Check your network connection and try again.
+        <button type="button" class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadContentAsync">Retry</button>
+    </div>
+}
+else
+{
+    <TextDiff OldText="@leftContent" NewText="@rightContent" CollapseContent="@collapseContent">
+        <Header>
+            <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+                <strong>README.md</strong> —
+                <a href="https://github.com/lzinga/TTTWeightedTraitorSelection" target="_blank" rel="noopener noreferrer">TTTWeightedTraitorSelection</a>
+                <small class="text-muted ms-2">
+                    <code>fe20c3e</code> → <code>c763193</code>
+                </small>
+                <div class="diff-stats-container mt-1">
+                    <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
+                    <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
+                    <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
+                </div>
+            </div>
+        </Header>
+    </TextDiff>
+}
+
+@code {
+    private string leftContent = string.Empty;
+    private string rightContent = string.Empty;
+    private bool collapseContent = true;
+    private bool isLoading = true;
+    private bool hasError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContentAsync();
+    }
+
+    private async Task LoadContentAsync()
+    {
+        isLoading = true;
+        hasError = false;
+        StateHasChanged();
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+
+            var leftTask = Http.GetStringAsync(
+                "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/fe20c3e645aaa20e40cecc615037d51a34f9cb4a/README.md",
+                cts.Token);
+            var rightTask = Http.GetStringAsync(
+                "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/c763193e8a5bddfbec097c7b96ea0f875eedb01b/README.md",
+                cts.Token);
+
+            await Task.WhenAll(leftTask, rightTask);
+
+            leftContent = await leftTask;
+            rightContent = await rightTask;
+        }
+        catch
+        {
+            hasError = true;
+            leftContent = string.Empty;
+            rightContent = string.Empty;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

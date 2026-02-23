@@ -1,5 +1,5 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
-    <a class="navbar-brand" href="">BlazorTextDiff Demo</a>
+    <a class="navbar-brand" href="">BlazorTextDiff</a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -9,17 +9,12 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                <span class="bi bi-house-fill" aria-hidden="true"></span> Basic
+                <span class="bi bi-house-fill" aria-hidden="true"></span> Home
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/ignore-case">
-                <span class="bi bi-type" aria-hidden="true"></span> IgnoreCase
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="/ignore-whitespace">
-                <span class="bi bi-text-indent-left" aria-hidden="true"></span> IgnoreWhitespace
+            <NavLink class="nav-link" href="/character-highlight">
+                <span class="bi bi-highlighter" aria-hidden="true"></span> Characters
             </NavLink>
         </div>
         <div class="nav-item px-3">

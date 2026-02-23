@@ -1,0 +1,75 @@
+﻿@page "/"
+
+<PageTitle>BlazorTextDiff Demo</PageTitle>
+
+<h1>BlazorTextDiff</h1>
+<p>A Blazor component for side-by-side text comparison with character-level highlighting, powered by <a href="https://github.com/mathertel/DiffPlex" target="_blank" rel="noopener noreferrer">DiffPlex</a>.</p>
+
+<div class="demo-toolbar mb-3">
+    <button type="button" class="btn btn-sm @(collapseContent ? "btn-primary" : "btn-outline-primary")" @onclick="() => collapseContent = !collapseContent">
+        @(collapseContent ? "▶ Collapse Unchanged" : "▤ Show All Lines")
+    </button>
+    <button type="button" class="btn btn-sm @(ignoreCase ? "btn-success" : "btn-outline-secondary")" @onclick="() => ignoreCase = !ignoreCase">
+        @(ignoreCase ? "Aa Ignoring Case" : "Aa Case Sensitive")
+    </button>
+    <button type="button" class="btn btn-sm @(ignoreWhiteSpace ? "btn-warning" : "btn-outline-secondary")" @onclick="() => ignoreWhiteSpace = !ignoreWhiteSpace">
+        @(ignoreWhiteSpace ? "␣ Ignoring Whitespace" : "␣ Whitespace Sensitive")
+    </button>
+</div>
+
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          CollapseContent="@collapseContent"
+          IgnoreCase="@ignoreCase"
+          IgnoreWhiteSpace="@ignoreWhiteSpace">
+    <Header>
+        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+            <div class="diff-stats-container">
+                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
+                <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
+                <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
+            </div>
+        </div>
+    </Header>
+</TextDiff>
+
+<h3 class="mt-4">Without Header</h3>
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          CollapseContent="@collapseContent"
+          IgnoreCase="@ignoreCase"
+          IgnoreWhiteSpace="@ignoreWhiteSpace" />
+
+@code {
+    private bool collapseContent = true;
+    private bool ignoreCase;
+    private bool ignoreWhiteSpace;
+
+    private const string oldText = @"Mr. and Mrs. Fursley, of number six, Sunset Drive, were proud to say that they were almost perfectly normal. They were the last people you'd expect to be involved in anything weird or mysterious, because they just didn't hold with such nonsense.
+Mr. Fursley was the director of a firm called Brunings, which made hatchets. He was a big, well fed man with no neck, although he did have a very large mustache. Mrs. Fursley was petite and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time bending over garden fences, spying on the neighbors. The Fursley's had a small son called Fudley and in their opinion there was no finer boy anywhere.
+The Dursleys had everything they wanted, but they also had a secret.
+Their greatest fear was that somebody would discover it.
+
+function example() {
+  return 'tabs';
+}
+
+<some>
+  <xml1>
+  </xml1>
+</some>";
+
+    private const string newText = @"Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much. They were the last people you'd expect to be involved in anything strange or mysterious, because they just didn't hold with such nonsense.
+Mr. Dursley was the director of a firm called Grunnings, which made drills. He was a big, beefy man with hardly any neck, although he did have a very large mustache. Mrs. Dursley was thin and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time craning over garden fences, spying on the neighbors. The Dursleys had a small son called Dudley and in their opinion there was no finer boy anywhere.
+The  Dursleys  had  everything  they  wanted,  but  they  also  had  a  secret.
+Their greatest fear was that somebody would discover it.
+
+function example() {
+    return 'spaces';
+}
+
+<some>
+    <xml2>
+    </xml2>
+</some>";
+}

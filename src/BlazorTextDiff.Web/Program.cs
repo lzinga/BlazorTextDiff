@@ -1,6 +1,4 @@
 using BlazorTextDiff.Web;
-using DiffPlex.DiffBuilder;
-using DiffPlex;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -15,10 +13,6 @@ builder.Services.AddScoped(sp => new HttpClient
 {
     BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
 });
-
-// Register DiffPlex services
-builder.Services.AddScoped<ISideBySideDiffBuilder, SideBySideDiffBuilder>();
-builder.Services.AddScoped<IDiffer, Differ>();
 
 // Enable logging for development
 if (builder.HostEnvironment.IsDevelopment())
