@@ -36,7 +36,7 @@ jobs:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
     - name: Install .NET workloads
-      run: dotnet workload install wasm-tools
+      run: dotnet workload install wasm-tools-net9
 
     - name: Generate version number
       id: version
