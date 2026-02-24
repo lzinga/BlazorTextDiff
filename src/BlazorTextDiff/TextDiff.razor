@@ -12,14 +12,21 @@
    }
 
    <CascadingValue Value="@CollapseContent" Name="@nameof(CollapseContent)">
-      <div class="diff-panes" style="@(isCollapsed ? $"max-height: {MaxHeight}px; overflow: auto;" : "max-height: auto; overflow: auto;")">
+      <div class="diff-panes"
+           style="@(isCollapsed ? $"max-height: {MaxHeight}px; overflow: auto;" : "max-height: auto; overflow: auto;")">
          @if (diff is not null)
          {
             <div class="diff-pane">
-               <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"></TextDiffPane>
+               <TextDiffPane Model="diff.OldText"
+                             PanePosition="@PanePosition.Left"
+                             VisibleLines="@visibleLines"
+                             OnShowHiddenLines="ShowHiddenLines" />
             </div>
             <div class="diff-pane">
-               <TextDiffPane Model="diff.NewText" PanePosition="@PanePosition.Right"></TextDiffPane>
+               <TextDiffPane Model="diff.NewText"
+                             PanePosition="@PanePosition.Right"
+                             VisibleLines="@visibleLines"
+                             OnShowHiddenLines="ShowHiddenLines" />
             </div>
          }
       </div>
@@ -51,6 +58,16 @@
     [Parameter] public bool CollapseContent { get; set; }
 
     /// <summary>
+    /// When true, unchanged lines will be hidden, showing only changed lines and some context.
+    /// </summary>
+    [Parameter] public bool HideUnchangedLines { get; set; } = false;
+
+    /// <summary>
+    /// The number of unchanged lines to show around each change when <see cref="HideUnchangedLines"/> is true.
+    /// </summary>
+    [Parameter] public int ContextLines { get; set; } = 3;
+
+    /// <summary>
     /// The text before any changes.
     /// </summary>
     [Parameter] public string? OldText { get; set; }
@@ -77,6 +94,7 @@
 
     private SideBySideDiffModel? diff;
     private bool isCollapsed;
+    private bool[]? visibleLines;
 
    /// <summary>
    /// When parameters set update the component.
@@ -104,6 +122,36 @@
          {
             DowngradeWhitespaceOnlyChanges(diff.OldText);
             DowngradeWhitespaceOnlyChanges(diff.NewText);
+         }
+      }
+   }
+
+    /// <summary> Creates a visibility state array for each line based on diff changes </summary>
+    private void CalculateVisibility()
+    {
+       if (diff == null || !HideUnchangedLines)
+       {
+          visibleLines = null;
+          return;
+       }
+
+       var lineCount = diff.OldText.Lines.Count;
+       visibleLines = new bool[lineCount];
+
+       for (var i = 0; i < lineCount; i++)
+       {
+          var oldLineUnchanged = diff.OldText.Lines[i].Type == ChangeType.Unchanged;
+          var newLineUnchanged = diff.NewText.Lines[i].Type == ChangeType.Unchanged;
+
+          if (oldLineUnchanged && newLineUnchanged)
+             continue;
+
+          var contextLinesStart = Math.Max(0, i    - ContextLines);
+          var contextLinesEnd = Math.Min(lineCount - 1, i + ContextLines);
+
+         for (var j = contextLinesStart; j <= contextLinesEnd; j++)
+         {
+            visibleLines[j] = true;
          }
       }
    }
@@ -144,5 +192,19 @@
    private void ToggleCollapse()
    {
       isCollapsed = !isCollapsed;
+   }
+
+   private void ShowHiddenLines((int Start, int Count) range)
+   {
+       if (visibleLines == null)
+          return;
+
+       var rangeEnd = Math.Min(range.Start + range.Count, visibleLines.Length);
+       for (var i = range.Start; i < rangeEnd; i++)
+       {
+          visibleLines[i] = true;
+       }
+
+       StateHasChanged();
    }
 }

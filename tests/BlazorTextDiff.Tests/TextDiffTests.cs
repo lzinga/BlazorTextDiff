@@ -222,4 +222,37 @@ public class TextDiffTests : TestContext
         var rightRows = rightPaneDiv.QuerySelectorAll("tr");
         Assert.True(rightRows.Length >= 4, $"Expected at least 4 rows in right pane, got {rightRows.Length}");
     }
+
+    [Fact]
+    public void HideUnchangedLines_HidesExcessContext()
+    {
+        // 10 lines, change at line 5
+        var oldText = string.Join("\n", Enumerable.Range(1, 10).Select(i => $"Line {i}"));
+        var newText = oldText.Replace("Line 5", "Modified Line 5");
+
+        var cut = RenderComponent<TextDiff>(parameters => parameters
+            .Add(p => p.OldText, oldText)
+            .Add(p => p.NewText, newText)
+            .Add(p => p.HideUnchangedLines, true)
+            .Add(p => p.ContextLines, 1));
+
+        // Line 5 is changed.
+        // Context 1: Lines 4, 5, 6 should be visible.
+        // Lines 1, 2, 3 should be hidden (3 lines).
+        // Lines 7, 8, 9, 10 should be hidden (4 lines).
+
+        var hiddenSummaries = cut.FindAll(".diff-hidden-summary");
+        Assert.Equal(4, hiddenSummaries.Count); // One at top, one at bottom for each side
+
+        Assert.Contains("3 lines hidden", hiddenSummaries[0].TextContent);
+        Assert.Contains("4 lines hidden", hiddenSummaries[1].TextContent);
+
+        // Check that visible lines are indeed shown
+        var lineTexts = cut.FindAll(".line-text").Select(el => el.TextContent).ToList();
+        Assert.Contains("Line 4", lineTexts);
+        Assert.Contains("Modified Line 5", lineTexts);
+        Assert.Contains("Line 6", lineTexts);
+        Assert.DoesNotContain("Line 1", lineTexts);
+        Assert.DoesNotContain("Line 10", lineTexts);
+    }
 }
