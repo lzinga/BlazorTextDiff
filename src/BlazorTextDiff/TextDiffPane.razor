@@ -4,8 +4,36 @@
     <table class="diff">
         @if (Model?.Lines is not null)
         {
-            @foreach (var diffLine in Model.Lines)
+            @for (var i = 0; i < Model.Lines.Count; i++)
             {
+                var diffLine = Model.Lines[i];
+                if (VisibleLines is not null && !VisibleLines[i])
+                {
+                    // If we are at the start of a hidden block, show a placeholder
+                    if (i == 0 || VisibleLines[i - 1])
+                    {
+                        var hiddenCount = 0;
+                        var lineIdx = i;
+
+                        // count next hidden lines
+                        for (var j = lineIdx; j < Model.Lines.Count && !VisibleLines[j]; j++)
+                        {
+                            hiddenCount++;
+                        }
+
+                        <tr class="diff-hidden-summary">
+                            <td class="line-number">...</td>
+                            <td class="line">
+                                <button type="button" class="show-hidden-button hidden-count"
+                                        @onclick="() => OnShowHiddenLines.InvokeAsync((lineIdx, hiddenCount))"
+                                        title="Click here to show hidden lines">
+                                <span>@hiddenCount exact lines hidden (show)</span>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    continue;
+                }
                 <tr>
                     <td class="line-number @diffLine.Type.ToString().ToLower()">
                         @((MarkupString)(diffLine.Position?.ToString() ?? "&nbsp;"))
@@ -24,4 +52,6 @@
 @code {
     [Parameter, EditorRequired] public DiffPaneModel Model { get; set; } = default!;
     [Parameter] public PanePosition PanePosition { get; set; }
+    [Parameter] public bool[]? VisibleLines { get; set; }
+    [Parameter] public EventCallback<(int Start, int Count)> OnShowHiddenLines { get; set; }
 }

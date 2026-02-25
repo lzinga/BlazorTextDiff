@@ -415,6 +415,46 @@ table.diff tr:hover td.line {
   background-color: color-mix(in srgb, var(--diff-border-primary) 30%, transparent);
 }
 
+.diff-hidden-summary td {
+  background-color: var(--diff-bg-tertiary) !important;
+  color: var(--diff-text-muted);
+  font-size: 12px;
+  padding: 2px 12px !important;
+  border-top: 1px solid var(--diff-border-primary);
+  border-bottom: 1px solid var(--diff-border-primary);
+}
+
+.diff-hidden-summary .line-number {
+  text-align: center !important;
+  border-right: 1px solid var(--diff-border-primary);
+}
+
+.diff-hidden-summary .hidden-count {
+  font-style: italic;
+  font-weight: 500;
+}
+
+.show-hidden-button {
+  background: none;
+  border: none;
+  color: var(--diff-text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.show-hidden-button:hover {
+  color: var(--diff-text-accent);
+  background-color: var(--diff-bg-secondary);
+}
+
 /* Responsive improvements */
 @media (max-width: 768px) {
   .diff-container .diff-panes {
