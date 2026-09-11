@@ -1,28 +1,41 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <a class="navbar-brand" href="">BlazorTextDiff</a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
+﻿<div class="top-row navbar navbar-dark">
+    <a class="navbar-brand" href="" @onclick="CloseNavMenu">BlazorTextDiff<span class="brand-caption">Interactive examples</span></a>
+    <button type="button" class="navbar-toggler" @onclick="ToggleNavMenu"
+            aria-label="Toggle demo navigation" aria-controls="demo-navigation"
+            aria-expanded="@(!collapseNavMenu ? "true" : "false")">
+        <span class="navbar-toggler-icon" aria-hidden="true"></span>
     </button>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-fill" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="character-highlight">
-                <span class="bi bi-highlighter" aria-hidden="true"></span> Characters
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="async">
-                <span class="bi bi-cloud-download-fill" aria-hidden="true"></span> Async
-            </NavLink>
-        </div>
+<div id="demo-navigation" class="@NavMenuCssClass">
+    <nav aria-label="Demo pages">
+        <ul class="demo-nav">
+            <li>
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
+                    <span class="bi bi-sliders" aria-hidden="true"></span> Playground
+                </NavLink>
+            </li>
+            <li>
+                <NavLink class="nav-link" href="character-highlight" @onclick="CloseNavMenu">
+                    <span class="bi bi-highlighter" aria-hidden="true"></span> Character highlights
+                </NavLink>
+            </li>
+            <li>
+                <NavLink class="nav-link" href="async" @onclick="CloseNavMenu">
+                    <span class="bi bi-cloud-download" aria-hidden="true"></span> Async loading
+                </NavLink>
+            </li>
+            <li>
+                <NavLink class="nav-link" href="large-files" @onclick="CloseNavMenu">
+                    <span class="bi bi-file-earmark-code" aria-hidden="true"></span> Large files
+                </NavLink>
+            </li>
+        </ul>
     </nav>
+    <div class="nav-help">
+        <p>A text comparison component for Blazor.</p>
+        <a href="https://github.com/lzinga/BlazorTextDiff#readme">Documentation &amp; source <span aria-hidden="true">↗</span></a>
+    </div>
 </div>
 
 @code {
@@ -34,4 +47,6 @@
     {
         collapseNavMenu = !collapseNavMenu;
     }
+
+    private void CloseNavMenu() => collapseNavMenu = true;
 }

@@ -1,0 +1,204 @@
+@page "/large-files"
+@using System.Text
+
+<PageTitle>Large files · BlazorTextDiff</PageTitle>
+
+<header class="page-header">
+    <p class="eyebrow">Explore the rendering tradeoffs</p>
+    <h1 tabindex="-1">Large-file comparison</h1>
+    <p>Compare generated JSON with changes right at the start. Virtualization renders only visible rows; the full documents are still compared.</p>
+</header>
+
+<div class="demo-controls">
+    <div class="control-field">
+        <label for="record-count" class="control-label">Original records</label>
+        <select id="record-count" class="form-control form-control-sm" @bind="recordCount" disabled="@isLoading" aria-describedby="generation-status">
+            <option value="1000">1,000</option>
+            <option value="5000">5,000</option>
+            <option value="20000">20,000</option>
+        </select>
+    </div>
+    <button id="generate-comparison" type="button" class="btn btn-primary" @onclick="GenerateAsync" disabled="@isLoading">
+        @(isLoading ? "Generating…" : "Generate comparison")
+    </button>
+    <div class="control-field">
+        <label for="viewport-height" class="control-label">@(virtualize ? "Viewport height" : "Collapsed height")</label>
+        <select id="viewport-height" class="form-control form-control-sm" @bind="viewportHeight" disabled="@isLoading">
+            <option value="300">300 px</option>
+            <option value="500">500 px</option>
+            <option value="700">700 px</option>
+        </select>
+    </div>
+    <div class="check-control">
+        <input id="virtualize-lines" type="checkbox" @bind="virtualize" disabled="@isLoading" aria-describedby="rendering-hint" />
+        <label for="virtualize-lines">Virtualize rows</label>
+    </div>
+    <div class="check-control">
+        <input id="wrap-lines" type="checkbox" @bind="WrapLongLines" disabled="@(isLoading || virtualize)" aria-describedby="rendering-hint" />
+        <label for="wrap-lines">Wrap long lines</label>
+    </div>
+</div>
+
+<p id="rendering-hint" class="control-hint">
+    @if (virtualize)
+    {
+        <span>Only visible rows and a small buffer are rendered. Wrapping is off, and the viewport has a fixed height.</span>
+    }
+    else
+    {
+        <span>All rows are rendered, even outside the height limit. Large samples can take longer to display. Use <strong>Show more</strong> to remove the height limit.</span>
+    }
+</p>
+
+<div id="generation-status" class="status-line" role="status">
+    @if (isLoading)
+    {
+        <span class="loading-spinner" aria-hidden="true"></span>
+        <span>@loadingMessage</span>
+        @if (generatedRecordCount > 0)
+        {
+            <span class="helper-text">Keeping the previous comparison until both inputs are ready.</span>
+        }
+    }
+    else
+    {
+        <span>Showing @generatedRecordCount.ToString("N0") original records.</span>
+        @if (recordCount != generatedRecordCount)
+        {
+            <span class="selection-notice">@recordCount.ToString("N0") selected — choose Generate comparison to apply.</span>
+        }
+    }
+</div>
+
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          DeferDiff="@isLoading"
+          Virtualize="@virtualize"
+          WrapLines="@WrapLongLines"
+          MaxHeight="@viewportHeight"
+          CollapseContent="true"
+          Class="demo-diff"
+          id="large-file-diff"
+          aria-busy="@(isLoading ? "true" : "false")">
+    <Header>
+        <ComparisonHeader Stats="@context" StackOnSmallScreens="@WrapLongLines" />
+    </Header>
+</TextDiff>
+
+<p class="comparison-help">
+    @if (WrapLongLines)
+    {
+        <span>Source line breaks are preserved. Turn wrapping off to keep long records on one row and scroll horizontally.</span>
+    }
+    else
+    {
+        <span>Scroll either pane horizontally or vertically; the other follows within its scrollable range. You can also focus a pane and use the arrow keys.</span>
+    }
+</p>
+
+<details id="rendering-guide" class="demo-disclosure">
+    <summary>Which rendering mode should I use? <span class="summary-hint">Performance, selection &amp; scrolling</span></summary>
+    <div class="disclosure-body">
+        <dl class="note-list">
+            <dt>Virtualized: fewer rows in the page</dt>
+            <dd>Only visible rows and a small buffer exist in the DOM. Rows have a fixed height and never wrap. <code>MaxHeight</code> sets the viewport height; <code>CollapseContent</code> is ignored, so there is no expand button.</dd>
+            <dt>All rows: the complete text is rendered</dt>
+            <dd>Turn virtualization off for full-document browser find, selection, or printing. Expand the view with <strong>Show more</strong> when you need to see the full result. Rendering 20,000 records in this mode can pause the page.</dd>
+            <dt>Rendering is not diff calculation</dt>
+            <dd>Both modes compute the full diff up front and keep its model in memory. Virtualization reduces rendering work; it does not speed up the comparison algorithm or move it off the UI thread.</dd>
+            <dt>Wrapping is a display choice</dt>
+            <dd>Real line breaks always remain intact. Without wrapping, both panes stay side by side and synchronize scrolling on both axes. Wrapped panes can stack on small screens.</dd>
+        </dl>
+        <p class="helper-text">Switching rendering modes, wrapping, or viewport height reuses the existing diff. Only new text or different ignore options require another comparison.</p>
+    </div>
+</details>
+
+<CodeExample Id="large-file-code" Title="Component with your current options" Code="@Usage">
+    <p class="helper-text">Keep <code>isLoading</code> true while preparing either input. <code>DeferDiff</code> retains the previous result, then compares the latest texts when loading finishes.</p>
+</CodeExample>
+
+<details id="generation-guide" class="demo-disclosure">
+    <summary>How the sample is generated <span class="summary-hint">Local, repeatable data</span></summary>
+    <div class="disclosure-body">
+        <p class="helper-text">Each JSON record occupies one long source line. The modified document changes the first record's status, removes record 3, and adds a record after record 5. More changes repeat throughout the document, so you can check alignment after scrolling.</p>
+        <p class="helper-text">Generation prepares the original text, yields to the browser, then prepares the modified text. During those stages, <code>DeferDiff</code> prevents an intermediate comparison. Generating again with the same size produces the same texts.</p>
+        <p class="helper-text">The selected count is the number of <em>original records</em>, not diff rows. Added records, removed records, and the JSON brackets affect the line totals and aligned row count.</p>
+    </div>
+</details>
+
+<p class="next-step">Want a smaller example? <a href="">Return to the playground and edit your own texts.</a></p>
+
+@code {
+    private int recordCount = 1000;
+    private int generatedRecordCount;
+    private int viewportHeight = 300;
+    private bool virtualize = true;
+    private bool wrapLines = true;
+    private bool isLoading = true;
+    private string loadingMessage = "Preparing the original JSON…";
+    private string? oldText;
+    private string? newText;
+
+    // Retain the user's wrapping preference, but show its effective state while virtualized.
+    private bool WrapLongLines
+    {
+        get => !virtualize && wrapLines;
+        set => wrapLines = value;
+    }
+
+    private string Usage => $@"<TextDiff OldText=""@oldText""
+          NewText=""@newText""
+          DeferDiff=""@isLoading""
+          Virtualize=""{virtualize.ToString().ToLowerInvariant()}""
+          WrapLines=""{WrapLongLines.ToString().ToLowerInvariant()}""
+          CollapseContent=""true""
+          MaxHeight=""{viewportHeight}"" />";
+
+    protected override Task OnInitializedAsync() => GenerateAsync();
+
+    private async Task GenerateAsync()
+    {
+        isLoading = true;
+        loadingMessage = "Preparing the original JSON…";
+        StateHasChanged();
+
+        // Yield to the browser between stages so the loading state can be painted.
+        await Task.Delay(1);
+        oldText = CreateDocument(recordCount, modified: false);
+        loadingMessage = "Original ready. Preparing the modified JSON…";
+        StateHasChanged();
+
+        await Task.Delay(1);
+        newText = CreateDocument(recordCount, modified: true);
+        generatedRecordCount = recordCount;
+        isLoading = false;
+    }
+
+    private static string CreateDocument(int count, bool modified)
+    {
+        var builder = new StringBuilder("[");
+        for (var id = 1; id <= count; id++)
+        {
+            if (modified && (id == 3 || id % 97 == 0))
+                continue;
+
+            AppendRecord(id, modified && (id == 1 || id % 17 == 0) ? "reviewed" : "pending");
+            if (modified && (id == 5 || id % 151 == 0))
+                AppendRecord(count + id, "added");
+        }
+        return builder.AppendLine().Append(']').ToString();
+
+        void AppendRecord(int id, string status)
+        {
+            if (builder.Length > 1)
+                builder.Append(',');
+
+            // Put the changed value first so it is visible without horizontal scrolling.
+            builder.AppendLine()
+                .Append("  { \"status\": \"").Append(status)
+                .Append("\", \"id\": ").Append(id)
+                .Append(", \"name\": \"Record ").Append(id.ToString("D5"))
+                .Append("\", \"description\": \"A generated record with a deliberately long description to demonstrate horizontal scrolling without changing the height of the aligned diff rows.\" }");
+        }
+    }
+}

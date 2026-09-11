@@ -11,21 +11,29 @@
       </div>
    }
 
-   <CascadingValue Value="@CollapseContent" Name="@nameof(CollapseContent)">
-      <div class="diff-panes" style="@(isCollapsed ? $"max-height: {MaxHeight}px; overflow: auto;" : "max-height: auto; overflow: auto;")">
-         @if (diff is not null)
-         {
-            <div class="diff-pane">
-               <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"></TextDiffPane>
-            </div>
-            <div class="diff-pane">
-               <TextDiffPane Model="diff.NewText" PanePosition="@PanePosition.Right"></TextDiffPane>
-            </div>
-         }
-      </div>
-   </CascadingValue>
+   @if ((Virtualize || !WrapLines) && diff is not null)
+   {
+      <ScrollableTextDiff Model="diff" Virtualize="@Virtualize"
+                          CollapseContent="@isCollapsed" MaxHeight="@MaxHeight" />
+   }
+   else
+   {
+      <CascadingValue Value="@CollapseContent" Name="@nameof(CollapseContent)">
+         <div class="diff-panes" style="@(isCollapsed ? $"max-height: {MaxHeight}px; overflow: auto;" : "max-height: auto; overflow: auto;")">
+            @if (diff is not null)
+            {
+               <div class="diff-pane">
+                  <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"></TextDiffPane>
+               </div>
+               <div class="diff-pane">
+                  <TextDiffPane Model="diff.NewText" PanePosition="@PanePosition.Right"></TextDiffPane>
+               </div>
+            }
+         </div>
+      </CascadingValue>
+   }
    
-   @if (CollapseContent)
+   @if (CollapseContent && !Virtualize)
    {
       <button type="button" class="diff-expand-notice" @onclick="ToggleCollapse">
          @(isCollapsed ? "▼ Show more" : "▲ Show less")
@@ -47,8 +55,24 @@
     /// </summary>
     [Parameter] public bool IgnoreWhiteSpace { get; set; } = false;
     
+    /// <summary>
+    /// The collapsed maximum height, or the fixed viewport height when Virtualize is enabled.
+    /// Must be positive in virtualized mode.
+    /// </summary>
     [Parameter] public int MaxHeight { get; set; } = 300;
     [Parameter] public bool CollapseContent { get; set; }
+
+    /// <summary>
+    /// Render only visible, fixed-height rows with synchronized scrolling on both axes.
+    /// Long lines scroll horizontally instead of wrapping. CollapseContent is ignored in this mode.
+    /// </summary>
+    [Parameter] public bool Virtualize { get; set; }
+
+    /// <summary>
+    /// Wrap long lines in nonvirtualized mode. Actual line breaks are always preserved.
+    /// Virtualized mode always uses nonwrapping lines.
+    /// </summary>
+    [Parameter] public bool WrapLines { get; set; } = true;
 
     /// <summary>
     /// The text before any changes.
@@ -59,6 +83,12 @@
     /// The text after any changes.
     /// </summary>
     [Parameter] public string? NewText { get; set; }
+
+    /// <summary>
+    /// When true, keep the last comparison without recomputing while inputs are being loaded.
+    /// Set to false to compare the latest text and options.
+    /// </summary>
+    [Parameter] public bool DeferDiff { get; set; }
     
     [Parameter] public RenderFragment<DiffStats>? Header { get; set; }
 
@@ -77,35 +107,59 @@
 
     private SideBySideDiffModel? diff;
     private bool isCollapsed;
+    private bool? previousCollapseContent;
+    private DiffInputs? previousInputs;
+
+    private readonly record struct DiffInputs(
+        string OldText, string NewText, bool IgnoreCase, bool IgnoreWhiteSpace);
 
    /// <summary>
    /// When parameters set update the component.
    /// </summary>
    protected override void OnParametersSet()
    {
-      isCollapsed = CollapseContent;
+      if (Virtualize)
+         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxHeight);
 
-      if (!string.IsNullOrEmpty(OldText) || !string.IsNullOrEmpty(NewText))
+      if (previousCollapseContent != CollapseContent)
+      {
+         isCollapsed = CollapseContent;
+         previousCollapseContent = CollapseContent;
+      }
+
+      if (DeferDiff)
+         return;
+
+      var inputs = new DiffInputs(
+         OldText ?? string.Empty, NewText ?? string.Empty, IgnoreCase, IgnoreWhiteSpace);
+      if (previousInputs == inputs)
+         return;
+
+      SideBySideDiffModel? nextDiff = null;
+      if (inputs.OldText.Length > 0 || inputs.NewText.Length > 0)
       {
          // Always use CharacterChunker for precise per-character highlighting.
          // ignoreWhiteSpace is NOT passed to DiffPlex because CharacterChunker
          // treats each space as a distinct character and the flag can't suppress
          // those diffs. Instead we post-process to remove whitespace-only changes.
-         diff = SideBySideDiffBuilder.Diff(
+         nextDiff = SideBySideDiffBuilder.Diff(
             new Differ(),
-            OldText ?? string.Empty,
-            NewText ?? string.Empty,
+            inputs.OldText,
+            inputs.NewText,
             false,
-            IgnoreCase,
+            inputs.IgnoreCase,
             LineChunker.Instance,
             CharacterChunker.Instance);
 
-         if (IgnoreWhiteSpace)
+         if (inputs.IgnoreWhiteSpace)
          {
-            DowngradeWhitespaceOnlyChanges(diff.OldText);
-            DowngradeWhitespaceOnlyChanges(diff.NewText);
+            DowngradeWhitespaceOnlyChanges(nextDiff.OldText);
+            DowngradeWhitespaceOnlyChanges(nextDiff.NewText);
          }
       }
+
+      diff = nextDiff;
+      previousInputs = inputs;
    }
 
    /// <summary>

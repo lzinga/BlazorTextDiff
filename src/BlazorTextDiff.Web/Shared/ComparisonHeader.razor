@@ -1,0 +1,31 @@
+<div class="comparison-header @(StackOnSmallScreens ? "comparison-header-stackable" : null)">
+    <div class="comparison-summary" role="status" aria-atomic="true">
+        <span class="summary-label">Lines in full comparison</span>
+        <span class="diff-stat stat-modified"><span aria-hidden="true">~</span> @Stats.LineModificationCount.ToString("N0") modified</span>
+        <span class="diff-stat stat-removed"><span aria-hidden="true">&minus;</span> @Stats.LineDeletionCount.ToString("N0") removed</span>
+        <span class="diff-stat stat-added"><span aria-hidden="true">+</span> @Stats.LineAdditionCount.ToString("N0") added</span>
+        @if (Stats.LineModificationCount == 0 && Stats.LineDeletionCount == 0 && Stats.LineAdditionCount == 0)
+        {
+            <span class="comparison-match">No differences with these options.</span>
+        }
+    </div>
+    <div class="comparison-labels">
+        <div>
+            <strong>@OriginalLabel</strong>
+            <span class="pane-position position-horizontal">Left</span>
+            <span class="pane-position position-vertical">Top</span>
+        </div>
+        <div>
+            <strong>@ModifiedLabel</strong>
+            <span class="pane-position position-horizontal">Right</span>
+            <span class="pane-position position-vertical">Below original</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public DiffStats Stats { get; set; } = new();
+    [Parameter] public bool StackOnSmallScreens { get; set; } = true;
+    [Parameter] public string OriginalLabel { get; set; } = "Original";
+    [Parameter] public string ModifiedLabel { get; set; } = "Modified";
+}

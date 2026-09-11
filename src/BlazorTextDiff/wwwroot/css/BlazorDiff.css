@@ -490,3 +490,68 @@ table.diff td.line-number:focus {
     color: #000 !important;
   }
 }
+
+/* Nonwrapping panes keep horizontal overflow inside the comparison. */
+.diff-container .diff-panes.diff-scroll-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.diff-container .diff-panes.diff-scroll-panes > .diff-pane {
+  min-width: 0;
+  border-right: 1px solid var(--diff-border-primary);
+  border-bottom: none;
+}
+
+.diff-container .diff-panes.diff-scroll-panes > .diff-pane:last-child {
+  border-right: none;
+}
+
+.diff-container .diff-scroll-pane {
+  overflow-x: scroll;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+.diff-container .diff-scroll-pane:focus-visible {
+  outline: 2px solid var(--diff-text-accent);
+  outline-offset: -2px;
+}
+
+.diff-container .diff-scroll-pane table.diff {
+  width: max-content;
+  min-width: 100%;
+}
+
+.diff-container .diff-virtualized-pane table.diff .diff-row,
+.diff-container .diff-virtualized-pane table.diff td {
+  height: var(--diff-virtual-row-height);
+}
+
+.diff-container .diff-virtualized-pane {
+  /* Replacing virtual rows must not move the viewport through browser scroll anchoring. */
+  overflow-anchor: none;
+}
+
+.diff-container .diff-virtualized-pane table.diff td {
+  box-sizing: border-box;
+  padding: 4px 12px;
+  line-height: calc(var(--diff-virtual-row-height) - 8px);
+}
+
+.diff-container .diff-scroll-pane table.diff td.line-number {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  width: 60px;
+  min-width: 60px;
+}
+
+.diff-container .diff-scroll-pane table.diff td.line,
+.diff-container .diff-panes .diff-scroll-pane .line-text {
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
+}

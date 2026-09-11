@@ -1,0 +1,94 @@
+@using DiffPlex.DiffBuilder.Model
+@using Microsoft.JSInterop
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="diff-panes diff-scroll-panes @(Virtualize ? "diff-virtualized-panes" : "diff-nowrap-panes")">
+    <div class="diff-pane">
+        <TextDiffPane Model="@Model.OldText" PanePosition="@PanePosition.Left"
+                      Virtualize="@Virtualize" WrapLines="false" CollapseContent="@CollapseContent"
+                      MaxHeight="@MaxHeight" @ref="leftPane" />
+    </div>
+    <div class="diff-pane">
+        <TextDiffPane Model="@Model.NewText" PanePosition="@PanePosition.Right"
+                      Virtualize="@Virtualize" WrapLines="false" CollapseContent="@CollapseContent"
+                      MaxHeight="@MaxHeight" @ref="rightPane" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SideBySideDiffModel Model { get; set; } = default!;
+    [Parameter] public bool Virtualize { get; set; }
+    [Parameter] public bool CollapseContent { get; set; }
+    [Parameter] public int MaxHeight { get; set; } = 300;
+
+    private TextDiffPane leftPane = default!;
+    private TextDiffPane rightPane = default!;
+    private IJSObjectReference? scrollModule;
+    private IJSObjectReference? scrollConnection;
+    private bool isDisposed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        scrollModule = await JS.InvokeAsync<IJSObjectReference>(
+            "import", "./_content/BlazorTextDiff/js/virtualizedDiff.js");
+
+        if (isDisposed)
+        {
+            await DisposeResourcesAsync();
+            return;
+        }
+
+        scrollConnection = await scrollModule.InvokeAsync<IJSObjectReference>(
+            "connect", leftPane.ScrollElement, rightPane.ScrollElement);
+
+        if (isDisposed)
+            await DisposeResourcesAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        isDisposed = true;
+        await DisposeResourcesAsync();
+    }
+
+    private async ValueTask DisposeResourcesAsync()
+    {
+        var module = scrollModule;
+        var connection = scrollConnection;
+        scrollModule = null;
+        scrollConnection = null;
+        if (module is null && connection is null)
+            return;
+
+        try
+        {
+            try
+            {
+                if (connection is not null)
+                {
+                    try
+                    {
+                        await connection.InvokeVoidAsync("dispose");
+                    }
+                    finally
+                    {
+                        await connection.DisposeAsync();
+                    }
+                }
+            }
+            finally
+            {
+                if (module is not null)
+                    await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // A Blazor Server circuit may already be disconnected during disposal.
+        }
+    }
+}

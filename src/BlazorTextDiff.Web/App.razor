@@ -4,9 +4,14 @@
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
-        <PageTitle>Not found</PageTitle>
+        <PageTitle>Page not found · BlazorTextDiff</PageTitle>
         <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
+            <header class="page-header">
+                <p class="eyebrow">BlazorTextDiff demo</p>
+                <h1 tabindex="-1">Page not found</h1>
+                <p>This address doesn't match a demo page.</p>
+            </header>
+            <a href="" class="btn btn-primary">Back to the playground</a>
         </LayoutView>
     </NotFound>
 </Router>

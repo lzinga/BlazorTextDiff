@@ -1,21 +1,29 @@
 ﻿@using DiffPlex.DiffBuilder.Model;
 
-<div class="diff-pane-@PanePosition.ToString().ToLower()">
+<div class="@CssClass"
+     style="@ViewportStyle"
+     tabindex="@(IsScrollable ? 0 : (int?)null)"
+     role="@(IsScrollable ? "region" : null)"
+     aria-label="@(IsScrollable ? (PanePosition == PanePosition.Left ? "Original text" : "Modified text") : null)"
+     @ref="ScrollElement">
     <table class="diff">
         @if (Model?.Lines is not null)
         {
-            @foreach (var diffLine in Model.Lines)
+            @if (Virtualize)
             {
-                <tr>
-                    <td class="line-number @diffLine.Type.ToString().ToLower()">
-                        @((MarkupString)(diffLine.Position?.ToString() ?? "&nbsp;"))
-                    </td>
-                    <td class="line @diffLine.Type.ToString().ToLower()-line">
-                        <span class="line-text">
-                            <TextDiffLine Model="diffLine"></TextDiffLine>
-                        </span>
-                    </td>
-                </tr>
+                <tbody>
+                    <Virtualize Items="@Model.Lines"
+                                ItemSize="@VirtualizedRowHeight"
+                                SpacerElement="tr"
+                                ItemContent="@RenderLine" />
+                </tbody>
+            }
+            else
+            {
+                @foreach (var diffLine in Model.Lines)
+                {
+                    @RenderLine(diffLine)
+                }
             }
         }
     </table>
@@ -24,4 +32,34 @@
 @code {
     [Parameter, EditorRequired] public DiffPaneModel Model { get; set; } = default!;
     [Parameter] public PanePosition PanePosition { get; set; }
+    [Parameter] public bool Virtualize { get; set; }
+    [Parameter] public bool WrapLines { get; set; } = true;
+    [Parameter] public bool CollapseContent { get; set; }
+    [Parameter] public int MaxHeight { get; set; } = 300;
+
+    internal ElementReference ScrollElement { get; private set; }
+
+    private const int VirtualizedRowHeight = 30;
+    private bool IsScrollable => Virtualize || !WrapLines;
+    private string CssClass => $"diff-pane-{PanePosition.ToString().ToLowerInvariant()}"
+        + (IsScrollable ? " diff-scroll-pane" : string.Empty)
+        + (Virtualize ? " diff-virtualized-pane" : !WrapLines ? " diff-nowrap-pane" : string.Empty);
+    private string? ViewportStyle => Virtualize
+        ? $"height: {MaxHeight}px; --diff-virtual-row-height: {VirtualizedRowHeight}px;"
+        : !WrapLines && CollapseContent ? $"max-height: {MaxHeight}px;" : null;
+
+    protected override void OnParametersSet()
+    {
+        if (Virtualize)
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxHeight);
+    }
+
+    private readonly RenderFragment<DiffPiece> RenderLine = diffLine => @<tr class="diff-row">
+        <td class="line-number @diffLine.Type.ToString().ToLowerInvariant()">
+            @((MarkupString)(diffLine.Position?.ToString() ?? "&nbsp;"))
+        </td>
+        <td class="line @diffLine.Type.ToString().ToLowerInvariant()-line">
+            <span class="line-text"><TextDiffLine Model="diffLine" /></span>
+        </td>
+    </tr>;
 }

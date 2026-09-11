@@ -1,94 +1,72 @@
 @page "/character-highlight"
 
-<PageTitle>Character Highlighting - BlazorTextDiff</PageTitle>
+<PageTitle>Character highlights · BlazorTextDiff</PageTitle>
 
-<h1>Character-Level Highlighting</h1>
-<p>Individual changed characters within a line are highlighted with a distinct color, just like Git's inline diff.</p>
+<header class="page-header">
+    <p class="eyebrow">Look closer</p>
+    <h1 tabindex="-1">Character highlights</h1>
+    <p>See what changed inside a line, not just that the line changed. Character highlighting is included by default.</p>
+</header>
 
-<h3>Typo Corrections</h3>
-<TextDiff OldText="@typoOld" NewText="@typoNew">
-    <Header>
-        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-            <div class="diff-stats-container">
-                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
-                <span class="diff-stats-badge info">@context.WordModificationCount words</span>
-            </div>
-        </div>
-    </Header>
-</TextDiff>
+<section class="example-section" aria-labelledby="small-edits-heading">
+    <h2 id="small-edits-heading">Small edits within a word</h2>
+    <p class="helper-text">Look for the added <code>d</code> in <code>completed</code> and the extra <code>p</code> removed from <code>repport</code>. The last line stays unchanged.</p>
+    <TextDiff OldText="@typoOld" NewText="@typoNew" Class="demo-diff" id="word-highlights">
+        <Header>
+            <ComparisonHeader Stats="@context" />
+        </Header>
+    </TextDiff>
+</section>
 
-<h3 class="mt-4">Code Refactoring</h3>
-<p>Renamed variables, changed values, and updated method signatures — only the exact characters that differ are indicated.</p>
-<TextDiff OldText="@codeOld" NewText="@codeNew" CollapseContent="true">
-    <Header>
-        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-            <div class="diff-stats-container">
-                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
-                <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
-                <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
-            </div>
-        </div>
-    </Header>
-</TextDiff>
+<section class="example-section" aria-labelledby="code-edits-heading">
+    <h2 id="code-edits-heading">Names and values in code</h2>
+    <p class="helper-text">Follow a renamed variable, a new value, and an updated filename. Stronger highlights isolate the edits inside each changed line.</p>
+    <TextDiff OldText="@codeOld" NewText="@codeNew" Class="demo-diff" id="code-highlights">
+        <Header>
+            <ComparisonHeader Stats="@context" />
+        </Header>
+    </TextDiff>
+</section>
+
+<details id="highlight-guide" class="demo-disclosure">
+    <summary>How to read the highlights <span class="summary-hint">Line → word → character</span></summary>
+    <div class="disclosure-body">
+        <dl class="note-list">
+            <dt>Start with the row</dt>
+            <dd>Amber marks a modified line, red a removed line, and green an added line. Unchanged lines stay uncolored.</dd>
+            <dt>Look inside the word</dt>
+            <dd>A partially changed word gets a soft highlight for context. A stronger highlight marks the characters that differ.</dd>
+            <dt>Read a run, not a box per character</dt>
+            <dd>Adjacent changed characters within a word share a highlight. A fully changed word uses the strong highlight without an extra word wrapper.</dd>
+        </dl>
+        <p class="helper-text">The header counts <em>lines</em>, not highlighted characters. One modified line can contain several edits.</p>
+    </div>
+</details>
+
+<CodeExample Id="character-code" Title="Use character highlighting" Code="@Usage">
+    <p class="helper-text">No extra flag is needed. Include the library stylesheet as shown in the <a href="">playground setup</a>. Colors and highlight shapes can be <a href="https://github.com/lzinga/BlazorTextDiff#customization">customized with CSS properties</a>.</p>
+</CodeExample>
+
+<p class="next-step">Next: <a href="async">load two versions from a remote source</a>, or <a href="">try your own texts in the playground</a>.</p>
 
 @code {
-    private const string typoOld = @"The quik brown fox jumpd over the layz dog.
-Programing is the art of writting code.
-Recieve the mesage and procede with causion.
-Definately check for boundry conditions.";
+    private const string typoOld = @"Export complete.
+Save the repport.
+Keep a local copy.";
 
-    private const string typoNew = @"The quick brown fox jumped over the lazy dog.
-Programming is the art of writing code.
-Receive the message and proceed with caution.
-Definitely check for boundary conditions.";
+    private const string typoNew = @"Export completed.
+Save the report.
+Keep a local copy.";
 
-    private const string codeOld = @"public class UserService
-{
-    private readonly ILogger _log;
-    private readonly int _maxRetries = 3;
+    private const string codeOld = @"var retryLimit = 3;
+var fileName = ""draft.csv"";
+var timeout = TimeSpan.FromSeconds(10);
+await ExportAsync(fileName, retryLimit, timeout);";
 
-    public UserService(ILogger log)
-    {
-        _log = log;
-    }
+    private const string codeNew = @"var maxRetries = 5;
+var fileName = ""final.json"";
+var timeout = TimeSpan.FromSeconds(30);
+await ExportAsync(fileName, maxRetries, timeout);";
 
-    public async Task<User> GetUser(int userId)
-    {
-        _log.Info($""Fetching user {userId}"");
-        var response = await _httpClient.GetAsync($""/api/users/{userId}"");
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsAsync<User>();
-    }
-
-    public void DeleteUser(int userId)
-    {
-        _log.Warn($""Deleting user {userId}"");
-        _httpClient.DeleteAsync($""/api/users/{userId}"");
-    }
-}";
-
-    private const string codeNew = @"public class UserService
-{
-    private readonly ILogger _logger;
-    private readonly int _maxRetries = 5;
-
-    public UserService(ILogger logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<UserDto> GetUserAsync(int userId)
-    {
-        _logger.LogInformation($""Fetching user {userId}"");
-        var response = await _httpClient.GetAsync($""/api/v2/users/{userId}"");
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<UserDto>();
-    }
-
-    public async Task DeleteUserAsync(int userId)
-    {
-        _logger.LogWarning($""Deleting user {userId}"");
-        await _httpClient.DeleteAsync($""/api/v2/users/{userId}"");
-    }
-}";
+    private const string Usage = @"<TextDiff OldText=""@oldText"" NewText=""@newText"" />";
 }

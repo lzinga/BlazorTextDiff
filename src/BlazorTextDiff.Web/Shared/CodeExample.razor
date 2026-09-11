@@ -1,0 +1,15 @@
+<details id="@Id" class="demo-disclosure code-example" open="@Open">
+    <summary>@Title <span class="summary-hint">Code</span></summary>
+    <div class="disclosure-body">
+        @ChildContent
+        <pre class="demo-code" tabindex="0" aria-label="@Title"><code>@Code</code></pre>
+    </div>
+</details>
+
+@code {
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public string Title { get; set; } = "Component code";
+    [Parameter, EditorRequired] public string Code { get; set; } = string.Empty;
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

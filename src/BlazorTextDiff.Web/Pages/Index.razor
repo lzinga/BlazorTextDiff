@@ -1,75 +1,236 @@
-﻿@page "/"
+@page "/"
 
-<PageTitle>BlazorTextDiff Demo</PageTitle>
+<PageTitle>Playground · BlazorTextDiff</PageTitle>
 
-<h1>BlazorTextDiff</h1>
-<p>A Blazor component for side-by-side text comparison with character-level highlighting, powered by <a href="https://github.com/mathertel/DiffPlex" target="_blank" rel="noopener noreferrer">DiffPlex</a>.</p>
+<header class="page-header">
+    <p class="eyebrow">BlazorTextDiff demo</p>
+    <h1 tabindex="-1">Text comparison playground</h1>
+    <p>Compare two versions of text, down to each changed character. Pick a sample, try the options, or edit the texts below.</p>
+</header>
 
-<div class="demo-toolbar mb-3">
-    <button type="button" class="btn btn-sm @(collapseContent ? "btn-primary" : "btn-outline-primary")" @onclick="() => collapseContent = !collapseContent">
-        @(collapseContent ? "▶ Collapse Unchanged" : "▤ Show All Lines")
-    </button>
-    <button type="button" class="btn btn-sm @(ignoreCase ? "btn-success" : "btn-outline-secondary")" @onclick="() => ignoreCase = !ignoreCase">
-        @(ignoreCase ? "Aa Ignoring Case" : "Aa Case Sensitive")
-    </button>
-    <button type="button" class="btn btn-sm @(ignoreWhiteSpace ? "btn-warning" : "btn-outline-secondary")" @onclick="() => ignoreWhiteSpace = !ignoreWhiteSpace">
-        @(ignoreWhiteSpace ? "␣ Ignoring Whitespace" : "␣ Whitespace Sensitive")
-    </button>
+<div class="demo-controls" aria-label="Comparison options">
+    <div class="control-field">
+        <label for="sample-select" class="control-label">Sample</label>
+        <select id="sample-select" class="form-control form-control-sm" @bind="sampleId" @bind:after="LoadSample"
+                aria-describedby="sample-description">
+            @foreach (var sample in Samples)
+            {
+                <option value="@sample.Id">@sample.Name</option>
+            }
+        </select>
+    </div>
+    <div class="check-control">
+        <input id="ignore-case" type="checkbox" @bind="ignoreCase" />
+        <label for="ignore-case">Ignore case</label>
+    </div>
+    <div class="check-control">
+        <input id="ignore-whitespace" type="checkbox" @bind="ignoreWhiteSpace" />
+        <label for="ignore-whitespace">Ignore whitespace</label>
+    </div>
 </div>
+<p id="sample-description" class="control-hint" role="status">
+    @if (HasPendingEdits)
+    {
+        <span>You have unapplied edits. Choose <strong>Compare texts</strong> in the source editors to apply them. Choosing a sample will replace them.</span>
+    }
+    else if (HasCustomTexts)
+    {
+        <span>Your edited texts are shown. Choose a sample to start over.</span>
+    }
+    else
+    {
+        @SelectedSample.Description
+    }
+</p>
 
-<TextDiff OldText="@oldText"
-          NewText="@newText"
-          CollapseContent="@collapseContent"
-          IgnoreCase="@ignoreCase"
-          IgnoreWhiteSpace="@ignoreWhiteSpace">
-    <Header>
-        <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-            <div class="diff-stats-container">
-                <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
-                <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
-                <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
+@if (string.IsNullOrEmpty(oldText) && string.IsNullOrEmpty(newText))
+{
+    <div id="playground-empty" class="status-panel" role="status">
+        <div>
+            <strong>Both texts are empty.</strong>
+            <p>Add text on either side in the source editors, then choose <strong>Compare texts</strong>.</p>
+        </div>
+    </div>
+}
+else
+{
+    <TextDiff OldText="@oldText"
+              NewText="@newText"
+              CollapseContent="@collapseContent"
+              MaxHeight="@maxHeight"
+              WrapLines="@wrapLines"
+              IgnoreCase="@ignoreCase"
+              IgnoreWhiteSpace="@ignoreWhiteSpace"
+              Class="demo-diff"
+              id="playground-diff">
+        <Header>
+            <ComparisonHeader Stats="@context" StackOnSmallScreens="@wrapLines" />
+        </Header>
+    </TextDiff>
+}
+<p class="comparison-help">Row colors mark changed lines. Stronger highlights pinpoint the changed characters. Totals include the whole comparison, not just the visible area.</p>
+
+<details id="source-editor" class="demo-disclosure">
+    <summary>Edit source texts <span class="summary-hint">Apply both together</span></summary>
+    <div class="disclosure-body">
+        <p id="source-editor-help" class="helper-text">Edits stay in this browser page and are compared only when you choose <strong>Compare texts</strong>. Choosing a sample replaces both editors.</p>
+        <div class="editor-grid">
+            <div>
+                <label for="original-text" class="control-label">Original text</label>
+                <textarea id="original-text" class="form-control source-text" rows="8" spellcheck="false"
+                          @bind="draftOldText" @bind:event="oninput" aria-describedby="source-editor-help"></textarea>
+            </div>
+            <div>
+                <label for="modified-text" class="control-label">Modified text</label>
+                <textarea id="modified-text" class="form-control source-text" rows="8" spellcheck="false"
+                          @bind="draftNewText" @bind:event="oninput" aria-describedby="source-editor-help"></textarea>
             </div>
         </div>
-    </Header>
-</TextDiff>
+        <div class="button-row editor-actions">
+            <button id="compare-texts" type="button" class="btn btn-primary" @onclick="ApplyTexts" disabled="@(!HasPendingEdits)">Compare texts</button>
+            <button id="reset-sample" type="button" class="btn btn-outline-secondary" @onclick="LoadSample" disabled="@(!CanResetSample)">Reset sample texts</button>
+            <span class="helper-text">@(HasPendingEdits ? "Unapplied edits — the comparison still shows the previous texts." : "The comparison is up to date.")</span>
+        </div>
+        <p class="helper-text editor-note">An empty original shows additions; an empty modified text shows removals. Text edits are not saved when you leave this page.</p>
+    </div>
+</details>
 
-<h3 class="mt-4">Without Header</h3>
-<TextDiff OldText="@oldText"
-          NewText="@newText"
-          CollapseContent="@collapseContent"
-          IgnoreCase="@ignoreCase"
-          IgnoreWhiteSpace="@ignoreWhiteSpace" />
+<details id="display-options" class="demo-disclosure">
+    <summary>Display options <span class="summary-hint">Wrapping &amp; height</span></summary>
+    <div class="disclosure-body">
+        <div class="controls-row">
+            <div class="check-control">
+                <input id="playground-wrap" type="checkbox" @bind="wrapLines" aria-describedby="display-help" />
+                <label for="playground-wrap">Wrap long lines</label>
+            </div>
+            <div class="check-control">
+                <input id="limit-height" type="checkbox" @bind="collapseContent" aria-describedby="display-help" />
+                <label for="limit-height">Limit comparison height</label>
+            </div>
+            <div class="control-field">
+                <label for="playground-height" class="control-label">Collapsed height</label>
+                <select id="playground-height" class="form-control form-control-sm" @bind="maxHeight" disabled="@(!collapseContent)">
+                    <option value="240">240 px</option>
+                    <option value="360">360 px</option>
+                    <option value="500">500 px</option>
+                </select>
+            </div>
+        </div>
+        <p id="display-help" class="helper-text control-hint">Wrapping changes only how long lines fit on screen; source line breaks stay intact. A height limit adds <strong>Show more</strong> / <strong>Show less</strong> controls. It does not hide unchanged lines.</p>
+        <p class="helper-text">For large documents and synchronized scrolling, try the <a href="large-files">large-file demo</a>.</p>
+    </div>
+</details>
+
+<section class="demo-section" aria-labelledby="usage-heading">
+    <h2 id="usage-heading">Use it in your app</h2>
+    <CodeExample Id="playground-code" Title="Component with your current options" Code="@Usage" Open="true">
+        <p class="helper-text">Set <code>oldText</code> and <code>newText</code> to your strings. The demo adds an optional <code>Header</code> for the line totals above.</p>
+    </CodeExample>
+    <details id="setup-guide" class="demo-disclosure">
+        <summary>First-time setup <span class="summary-hint">Package, styles &amp; namespace</span></summary>
+        <div class="disclosure-body">
+            <ol class="setup-steps">
+                <li>
+                    Install the package in your Blazor app.
+                    <pre class="demo-code" tabindex="0" aria-label="Install the package"><code>dotnet add package BlazorTextDiff</code></pre>
+                </li>
+                <li>
+                    Add the stylesheet to your host page, such as <code>index.html</code> or <code>_Host.cshtml</code>.
+                    <pre class="demo-code" tabindex="0" aria-label="Add the stylesheet"><code>@StylesheetExample</code></pre>
+                </li>
+                <li>
+                    Add the namespace to <code>_Imports.razor</code>, then use <code>TextDiff</code> in a Razor page.
+                    <pre class="demo-code" tabindex="0" aria-label="Import the namespace"><code>@ImportExample</code></pre>
+                </li>
+            </ol>
+            <p class="helper-text">No manual script tags or service registration are needed. See the <a href="https://github.com/lzinga/BlazorTextDiff#parameters">full parameter reference</a> for more options.</p>
+        </div>
+    </details>
+</section>
+
+<nav class="next-examples" aria-label="Explore more examples">
+    <a href="character-highlight"><strong>Character highlights</strong><span>Understand the details</span></a>
+    <a href="async"><strong>Async loading</strong><span>Compare remote content</span></a>
+    <a href="large-files"><strong>Large files</strong><span>Explore rendering options</span></a>
+</nav>
 
 @code {
-    private bool collapseContent = true;
+    private sealed record Sample(string Id, string Name, string Description, string Original, string Modified);
+
+    private static readonly Sample[] Samples =
+    {
+        new("settings", "Settings JSON", "Changed values, a removed setting, and a new setting — all in a few lines.",
+            @"{
+  ""theme"": ""light"",
+  ""pageSize"": 20,
+  ""legacyMenu"": true,
+  ""showTips"": true,
+  ""cacheMinutes"": 5
+}",
+            @"{
+  ""theme"": ""dark"",
+  ""pageSize"": 50,
+  ""showTips"": true,
+  ""autoSave"": true,
+  ""cacheMinutes"": 5
+}"),
+        new("code", "Small code change", "Follow an export setting from its value to the method call.",
+            @"var fileName = ""report.txt"";
+var maxAttempts = 3;
+var includeHeader = false;
+
+await ExportAsync(fileName, maxAttempts, includeHeader);",
+            @"var fileName = ""report.csv"";
+var maxAttempts = 5;
+var includeHeader = true;
+var delimiter = "","";
+
+await ExportAsync(fileName, maxAttempts, includeHeader, delimiter);"),
+        new("formatting", "Case & spacing", "Try both ignore options: only casing and leading spaces differ.",
+            @"LogLevel = info
+Region = west
+RetryLimit = 3",
+            @"loglevel = INFO
+  Region = west
+RetryLimit = 3")
+    };
+
+    private string sampleId = Samples[0].Id;
+    private string oldText = Samples[0].Original;
+    private string newText = Samples[0].Modified;
+    private string draftOldText = Samples[0].Original;
+    private string draftNewText = Samples[0].Modified;
     private bool ignoreCase;
     private bool ignoreWhiteSpace;
+    private bool wrapLines = true;
+    private bool collapseContent;
+    private int maxHeight = 360;
 
-    private const string oldText = @"Mr. and Mrs. Fursley, of number six, Sunset Drive, were proud to say that they were almost perfectly normal. They were the last people you'd expect to be involved in anything weird or mysterious, because they just didn't hold with such nonsense.
-Mr. Fursley was the director of a firm called Brunings, which made hatchets. He was a big, well fed man with no neck, although he did have a very large mustache. Mrs. Fursley was petite and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time bending over garden fences, spying on the neighbors. The Fursley's had a small son called Fudley and in their opinion there was no finer boy anywhere.
-The Dursleys had everything they wanted, but they also had a secret.
-Their greatest fear was that somebody would discover it.
+    private Sample SelectedSample => Samples.First(sample => sample.Id == sampleId);
+    private bool HasPendingEdits => draftOldText != oldText || draftNewText != newText;
+    private bool HasCustomTexts => oldText != SelectedSample.Original || newText != SelectedSample.Modified;
+    private bool CanResetSample => HasPendingEdits || HasCustomTexts;
 
-function example() {
-  return 'tabs';
-}
+    private void LoadSample()
+    {
+        oldText = draftOldText = SelectedSample.Original;
+        newText = draftNewText = SelectedSample.Modified;
+    }
 
-<some>
-  <xml1>
-  </xml1>
-</some>";
+    private void ApplyTexts()
+    {
+        oldText = draftOldText;
+        newText = draftNewText;
+    }
 
-    private const string newText = @"Mr. and Mrs. Dursley, of number four, Privet Drive, were proud to say that they were perfectly normal, thank you very much. They were the last people you'd expect to be involved in anything strange or mysterious, because they just didn't hold with such nonsense.
-Mr. Dursley was the director of a firm called Grunnings, which made drills. He was a big, beefy man with hardly any neck, although he did have a very large mustache. Mrs. Dursley was thin and blonde and had nearly twice the usual amount of neck, which came in very useful as she spent so much of her time craning over garden fences, spying on the neighbors. The Dursleys had a small son called Dudley and in their opinion there was no finer boy anywhere.
-The  Dursleys  had  everything  they  wanted,  but  they  also  had  a  secret.
-Their greatest fear was that somebody would discover it.
+    private string Usage => $@"<TextDiff OldText=""@oldText""
+          NewText=""@newText""
+          IgnoreCase=""{ignoreCase.ToString().ToLowerInvariant()}""
+          IgnoreWhiteSpace=""{ignoreWhiteSpace.ToString().ToLowerInvariant()}""
+          WrapLines=""{wrapLines.ToString().ToLowerInvariant()}""
+          CollapseContent=""{collapseContent.ToString().ToLowerInvariant()}""
+          MaxHeight=""{maxHeight}"" />";
 
-function example() {
-    return 'spaces';
-}
-
-<some>
-    <xml2>
-    </xml2>
-</some>";
+    private const string StylesheetExample = @"<link href=""_content/BlazorTextDiff/css/BlazorDiff.css"" rel=""stylesheet"" />";
+    private const string ImportExample = "@using BlazorTextDiff";
 }

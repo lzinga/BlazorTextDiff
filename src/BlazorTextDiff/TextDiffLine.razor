@@ -1,4 +1,5 @@
 ﻿@using DiffPlex.DiffBuilder.Model;
+@using System.Text;
 
 @if (!string.IsNullOrEmpty(Model?.Text))
 {
@@ -16,16 +17,19 @@
             }
             else if (word.IsFullyChanged)
             {
-                <span class="@word.CharacterCss">@word.Text</span>
+                @foreach (var run in word.Runs)
+                {
+                    <span class="@run.CssClass">@run.Text</span>
+                }
             }
             else
             {
-                <span class="@word.WordCss">@foreach (var ch in word.Characters)
+                <span class="@word.WordCss">@foreach (var run in word.Runs)
                     {
-                        @if (ch.IsChanged)
-                        {<span class="@ch.CssClass">@ch.Text</span>}
+                        @if (run.IsChanged)
+                        {<span class="@run.CssClass">@run.Text</span>}
                         else
-                        {@ch.Text}
+                        {@run.Text}
                     }</span>
             }
         }
@@ -39,65 +43,78 @@
 @code {
     [Parameter, EditorRequired] public DiffPiece Model { get; set; } = default!;
 
-    private sealed record CharInfo(string Text, bool IsChanged, string CssClass);
+    private sealed record HighlightRun(string Text, ChangeType Type)
+    {
+        public bool IsChanged => Type != ChangeType.Unchanged;
+        public string CssClass => $"{Type.ToString().ToLowerInvariant()}-character";
+    }
 
     private sealed record WordGroup(
         string Text,
-        List<CharInfo> Characters,
+        List<HighlightRun> Runs,
         bool HasChanges,
         bool IsFullyChanged,
-        string CharacterCss,
         string WordCss);
 
     private List<WordGroup> GetWords()
     {
         var words = new List<WordGroup>();
-        var currentChars = new List<CharInfo>();
+        var currentPieces = new List<DiffPiece>();
+        var currentIsWhitespace = false;
 
         foreach (var sub in Model.SubPieces)
         {
             if (sub.Type == ChangeType.Imaginary) continue;
-            var text = sub.Text ?? "";
-            if (text.Length == 0) continue;
+            if (string.IsNullOrEmpty(sub.Text)) continue;
 
-            var isChanged = sub.Type != ChangeType.Unchanged;
-            var info = new CharInfo(text, isChanged, $"{sub.Type.ToString().ToLower()}-character");
+            var isWhitespace = sub.Text.All(char.IsWhiteSpace);
+            // Keep whitespace out of word wrappers, merging only like-styled whitespace.
+            if (currentPieces.Count > 0
+                && (currentIsWhitespace != isWhitespace
+                    || (isWhitespace && currentPieces[^1].Type != sub.Type)))
+            {
+                words.Add(BuildWord(currentPieces));
+                currentPieces.Clear();
+            }
 
-            if (text.All(char.IsWhiteSpace))
-            {
-                if (currentChars.Count > 0)
-                {
-                    words.Add(BuildWord(currentChars));
-                    currentChars = [];
-                }
-                words.Add(BuildWord([info]));
-            }
-            else
-            {
-                currentChars.Add(info);
-            }
+            currentPieces.Add(sub);
+            currentIsWhitespace = isWhitespace;
         }
 
-        if (currentChars.Count > 0)
-            words.Add(BuildWord(currentChars));
+        if (currentPieces.Count > 0)
+            words.Add(BuildWord(currentPieces));
 
         return words;
     }
 
-    private static WordGroup BuildWord(List<CharInfo> chars)
+    private static WordGroup BuildWord(List<DiffPiece> pieces)
     {
-        var text = string.Concat(chars.Select(c => c.Text));
-        var changed = chars.Where(c => c.IsChanged).ToList();
+        var runs = new List<HighlightRun>();
+        var runType = pieces[0].Type;
+        var runText = new StringBuilder();
+        foreach (var piece in pieces)
+        {
+            if (piece.Type != runType)
+            {
+                runs.Add(new HighlightRun(runText.ToString(), runType));
+                runText.Clear();
+                runType = piece.Type;
+            }
+            runText.Append(piece.Text);
+        }
+        runs.Add(new HighlightRun(runText.ToString(), runType));
+
+        var text = string.Concat(runs.Select(run => run.Text));
+        var changed = runs.Where(run => run.IsChanged).ToList();
         var hasChanges = changed.Count > 0;
-        var isFullyChanged = changed.Count == chars.Count;
-        var dominantType = changed.FirstOrDefault()?.CssClass.Replace("-character", "") ?? "unchanged";
+        var isFullyChanged = changed.Count == runs.Count;
+        var dominantType = changed.FirstOrDefault()?.Type ?? ChangeType.Unchanged;
 
         return new WordGroup(
             text,
-            chars,
+            runs,
             hasChanges,
             isFullyChanged,
-            $"{dominantType}-character",
-            $"{dominantType}-word");
+            $"{dominantType.ToString().ToLowerInvariant()}-word");
     }
 }

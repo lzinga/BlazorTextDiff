@@ -1,58 +1,82 @@
-﻿@page "/async"
+@page "/async"
 @inject HttpClient Http
 
-<PageTitle>Async Loading - BlazorTextDiff</PageTitle>
+<PageTitle>Async loading · BlazorTextDiff</PageTitle>
 
-<h1>Async Content Loading</h1>
-<p>Load and compare content from remote sources. This example fetches two versions of a README from GitHub.</p>
+<header class="page-header">
+    <p class="eyebrow">Real content, loaded on demand</p>
+    <h1 tabindex="-1">Async loading</h1>
+    <p>Fetch two versions of a public README and compare them once both are ready. Reload to see the loading state again.</p>
+</header>
 
-<div class="mb-3">
-    <button type="button" class="btn btn-sm @(collapseContent ? "btn-primary" : "btn-outline-primary")" @onclick="() => collapseContent = !collapseContent" disabled="@(isLoading || hasError)">
-        @(collapseContent ? "▶ Collapse Unchanged" : "▤ Show All Lines")
+<div class="demo-controls">
+    <button id="reload-content" type="button" class="btn btn-primary" @onclick="LoadContentAsync" disabled="@isLoading">
+        @(isLoading ? "Loading both versions…" : hasError ? "Retry loading" : "Reload comparison")
     </button>
-    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="LoadContentAsync" disabled="@isLoading">
-        ↻ Reload
-    </button>
+    <div class="check-control">
+        <input id="async-limit-height" type="checkbox" @bind="collapseContent" disabled="@(isLoading || hasError)" aria-describedby="async-height-help" />
+        <label for="async-limit-height">Limit comparison height</label>
+    </div>
 </div>
+<p id="async-height-help" class="control-hint">The height limit keeps the view compact. <strong>Show more</strong> expands it; no unchanged lines are removed.</p>
 
-@if (isLoading)
-{
-    <div class="diff-loading-overlay">
-        <div class="diff-loading-content">
-            <div class="loading-spinner loading-spinner-lg loading-pulse mb-3" role="status" aria-label="Loading content"></div>
-            <h5>Loading Content...</h5>
-            <small>Fetching README files from two GitHub commits.</small>
-        </div>
-    </div>
-}
-else if (hasError)
-{
-    <div class="alert alert-danger" role="alert">
-        <strong>Failed to load content.</strong> Check your network connection and try again.
-        <button type="button" class="btn btn-sm btn-outline-danger ms-2" @onclick="LoadContentAsync">Retry</button>
-    </div>
-}
-else
-{
-    <TextDiff OldText="@leftContent" NewText="@rightContent" CollapseContent="@collapseContent">
-        <Header>
-            <div style="padding: 10px 12px; background-color: #f8f9fa; border-bottom: 1px solid #dee2e6;">
-                <strong>README.md</strong> —
-                <a href="https://github.com/lzinga/TTTWeightedTraitorSelection" target="_blank" rel="noopener noreferrer">TTTWeightedTraitorSelection</a>
-                <small class="text-muted ms-2">
-                    <code>fe20c3e</code> → <code>c763193</code>
-                </small>
-                <div class="diff-stats-container mt-1">
-                    <span class="diff-stats-badge warning">@context.LineModificationCount modified</span>
-                    <span class="diff-stats-badge danger">@context.LineDeletionCount deleted</span>
-                    <span class="diff-stats-badge success">@context.LineAdditionCount added</span>
-                </div>
+<section aria-labelledby="readme-heading">
+    <h2 id="readme-heading">README.md</h2>
+    @if (isLoading)
+    {
+        <div class="status-panel" role="status">
+            <span class="loading-spinner loading-spinner-lg" aria-hidden="true"></span>
+            <div>
+                <strong>Fetching both versions…</strong>
+                <p>Two requests run together. They share a 30-second timeout.</p>
             </div>
-        </Header>
-    </TextDiff>
-}
+        </div>
+    }
+    else if (hasError)
+    {
+        <div class="status-panel status-error" role="alert">
+            <div>
+                <strong>We couldn't load both versions.</strong>
+                <p>Check your connection, then choose <strong>Retry loading</strong>. GitHub may also be temporarily unavailable.</p>
+                <p class="helper-text">No partial comparison is shown if either request fails.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <TextDiff OldText="@leftContent" NewText="@rightContent" CollapseContent="@collapseContent"
+                  MaxHeight="400" Class="demo-diff" id="async-diff">
+            <Header>
+                <ComparisonHeader Stats="@context" OriginalLabel="Original · fe20c3e" ModifiedLabel="Modified · c763193" />
+            </Header>
+        </TextDiff>
+    }
+</section>
+
+<details id="async-sources" class="demo-disclosure">
+    <summary>About these source files <span class="summary-hint">Two pinned commits</span></summary>
+    <div class="disclosure-body">
+        <p class="helper-text">Both files are from <a href="https://github.com/lzinga/TTTWeightedTraitorSelection">TTTWeightedTraitorSelection</a>. The commit IDs are pinned so reloading compares the same versions.</p>
+        <dl class="note-list source-list">
+            <dt>Original</dt>
+            <dd><a href="@OriginalUrl">README.md at fe20c3e</a></dd>
+            <dt>Modified</dt>
+            <dd><a href="@ModifiedUrl">README.md at c763193</a></dd>
+        </dl>
+        <p class="helper-text">This page needs network access to <code>raw.githubusercontent.com</code>. The files are fetched in your browser, not bundled with the demo.</p>
+    </div>
+</details>
+
+<CodeExample Id="async-code" Title="Load both texts before comparing" Code="@Usage">
+    <p class="helper-text">Start both requests before awaiting <code>Task.WhenAll</code>. Replace the inputs only after both succeed, and keep loading, error, and retry states in the page.</p>
+</CodeExample>
+
+<p class="next-step">Next: <a href="large-files">explore large-file rendering and staged input generation</a>.</p>
 
 @code {
+    private const string OriginalUrl = "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/fe20c3e645aaa20e40cecc615037d51a34f9cb4a/README.md";
+    private const string ModifiedUrl = "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/c763193e8a5bddfbec097c7b96ea0f875eedb01b/README.md";
+
     private string leftContent = string.Empty;
     private string rightContent = string.Empty;
     private bool collapseContent = true;
@@ -74,19 +98,15 @@ else
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
 
-            var leftTask = Http.GetStringAsync(
-                "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/fe20c3e645aaa20e40cecc615037d51a34f9cb4a/README.md",
-                cts.Token);
-            var rightTask = Http.GetStringAsync(
-                "https://raw.githubusercontent.com/lzinga/TTTWeightedTraitorSelection/c763193e8a5bddfbec097c7b96ea0f875eedb01b/README.md",
-                cts.Token);
+            var leftTask = Http.GetStringAsync(OriginalUrl, cts.Token);
+            var rightTask = Http.GetStringAsync(ModifiedUrl, cts.Token);
 
             await Task.WhenAll(leftTask, rightTask);
 
             leftContent = await leftTask;
             rightContent = await rightTask;
         }
-        catch
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException)
         {
             hasError = true;
             leftContent = string.Empty;
@@ -98,4 +118,61 @@ else
             StateHasChanged();
         }
     }
+
+    private string Usage => $@"@inject HttpClient Http
+
+<button @onclick=""LoadContentAsync"" disabled=""@isLoading"">
+    @(hasError ? ""Retry loading"" : ""Reload comparison"")
+</button>
+
+@if (isLoading)
+{{
+    <p role=""status"">Loading both versions…</p>
+}}
+else if (hasError)
+{{
+    <p role=""alert"">Could not load both versions. Please try again.</p>
+}}
+else
+{{
+    <TextDiff OldText=""@leftContent"" NewText=""@rightContent""
+              CollapseContent=""{collapseContent.ToString().ToLowerInvariant()}"" MaxHeight=""400"" />
+}}
+
+@code {{
+    private string leftContent = string.Empty;
+    private string rightContent = string.Empty;
+    private bool isLoading = true;
+    private bool hasError;
+
+    protected override Task OnInitializedAsync() => LoadContentAsync();
+
+    private async Task LoadContentAsync()
+    {{
+        isLoading = true;
+        hasError = false;
+        StateHasChanged();
+        try
+        {{
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var leftTask = Http.GetStringAsync(
+                ""{OriginalUrl}"", cts.Token);
+            var rightTask = Http.GetStringAsync(
+                ""{ModifiedUrl}"", cts.Token);
+            await Task.WhenAll(leftTask, rightTask);
+            leftContent = await leftTask;
+            rightContent = await rightTask;
+        }}
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException)
+        {{
+            hasError = true;
+            leftContent = rightContent = string.Empty;
+        }}
+        finally
+        {{
+            isLoading = false;
+            StateHasChanged();
+        }}
+    }}
+}}";
 }

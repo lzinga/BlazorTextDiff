@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Try BlazorTextDiff with editable text samples, character highlights, async loading, and large-file rendering examples." />
     <title>BlazorTextDiff Demo</title>
     <base href="/" />
     
@@ -17,31 +18,22 @@
 
 <body>
     <div id="app">
-        <style>
-            .loading-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-            .loading-inner { text-align: center; }
-            .loading-inner svg { animation: spin 1s linear infinite; width: 40px; height: 40px; display: block; margin: 0 auto; }
-            .loading-inner p { margin-top: 1rem; color: #6c757d; font-size: 0.95rem; animation: none; }
-            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        </style>
-        <div class="loading-container">
-            <div class="loading-inner">
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="#e9ecef" stroke-width="3"/>
-                    <path d="M12 2a10 10 0 0 1 10 10" stroke="#0d6efd" stroke-width="3" stroke-linecap="round"/>
-                </svg>
-                <p>Loading BlazorTextDiff Demo...</p>
+        <div class="loading-container" role="status">
+            <div>
+                <span class="loading-spinner loading-spinner-lg" aria-hidden="true"></span>
+                <p>Loading BlazorTextDiff…</p>
+                <small>Preparing the interactive examples.</small>
             </div>
         </div>
     </div>
 
     <div id="blazor-error-ui">
-        <div class="alert alert-danger m-3" role="alert">
-            <h4 class="alert-heading">Unhandled Error</h4>
-            <p class="mb-3">An unhandled error has occurred. Please try refreshing the page.</p>
-            <div class="d-flex gap-2">
-                <a href="" class="btn btn-outline-primary">Reload</a>
-                <button class="btn btn-secondary dismiss">Dismiss</button>
+        <div class="error-content" role="alert">
+            <strong>The demo hit an unexpected error.</strong>
+            <p>Reload to try again. Text edits in the playground will not be saved.</p>
+            <div class="button-row">
+                <a href="" class="btn btn-primary reload">Reload demo</a>
+                <button type="button" class="btn btn-outline-secondary dismiss">Dismiss</button>
             </div>
         </div>
     </div>
