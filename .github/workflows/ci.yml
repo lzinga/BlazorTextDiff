@@ -22,6 +22,14 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Test scrolling helpers
+      run: node --experimental-default-type=module --test
+
     - name: Install .NET workloads
       run: dotnet workload install wasm-tools-net9
 

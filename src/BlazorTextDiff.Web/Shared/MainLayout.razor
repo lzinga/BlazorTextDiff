@@ -1,13 +1,23 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
+<a class="skip-link" href="@SkipLink" @onclick="SkipToContentAsync" @onclick:preventDefault>Skip to content</a>
 <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
 
-    <main>
-        <article class="content px-4">
+    <main id="main-content" class="main" tabindex="-1" @ref="mainContent">
+        <article class="content">
             @Body
         </article>
     </main>
 </div>
+
+@code {
+    private ElementReference mainContent;
+
+    private string SkipLink => $"{Navigation.ToBaseRelativePath(Navigation.Uri).Split('#')[0]}#main-content";
+
+    private Task SkipToContentAsync() => mainContent.FocusAsync().AsTask();
+}

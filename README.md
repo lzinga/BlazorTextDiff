@@ -8,7 +8,8 @@ A Blazor component for displaying side-by-side text differences with character-l
 - Character-level highlighting within changed lines
 - Word-level soft highlight with character-level strong highlight for partial changes
 - Adjacent character highlights merge into smooth pill shapes
-- Collapse/expand unchanged sections
+- Opt-in viewport virtualization for large documents
+- Collapse/expand the comparison viewport
 - Ignore case and whitespace options
 - Custom header with diff statistics
 - Custom CSS class and attribute support
@@ -24,7 +25,15 @@ A Blazor component for displaying side-by-side text differences with character-l
 
 ## Live Demo
 
-[https://lzinga.github.io/BlazorTextDiff/](https://lzinga.github.io/BlazorTextDiff/)
+Start with the [interactive playground](https://lzinga.github.io/BlazorTextDiff/): choose a small sample, adjust comparison options, or edit both source texts and apply them together. Component code follows the current options, with first-time setup available below the comparison.
+
+The focused examples cover:
+
+- [Character highlights](https://lzinga.github.io/BlazorTextDiff/character-highlight) — read edits within words, names, and values.
+- [Async loading](https://lzinga.github.io/BlazorTextDiff/async) — fetch two pinned public README versions, with loading, error, and retry states.
+- [Large files](https://lzinga.github.io/BlazorTextDiff/large-files) — generate JSON comparisons and explore virtualization, wrapping, viewport height, and deferred input updates.
+
+Height limits keep the view compact; they do not remove unchanged lines. Virtualization limits rendered rows, not the full-document diff calculation. Each example includes optional explanations and selectable code.
 
 ## Installation
 
@@ -40,7 +49,7 @@ Add the stylesheet to your `index.html` or `_Host.cshtml`:
 <link href="_content/BlazorTextDiff/css/BlazorDiff.css" rel="stylesheet" />
 ```
 
-No JavaScript or service registration is required.
+No manual script tags or service registration are required. Virtualized and nonwrapping modes automatically import the library's scrolling helper.
 
 ## Usage
 
@@ -75,14 +84,71 @@ No JavaScript or service registration is required.
 |---|---|---|---|
 | `OldText` | `string?` | `null` | Original text (left pane) |
 | `NewText` | `string?` | `null` | Modified text (right pane) |
-| `CollapseContent` | `bool` | `false` | Collapse unchanged sections |
-| `MaxHeight` | `int` | `300` | Max height (px) when collapsed |
+| `DeferDiff` | `bool` | `false` | Keep the last comparison while loading inputs; set to `false` to compare the latest text and options |
+| `Virtualize` | `bool` | `false` | Render only visible, fixed-height rows with synchronized scrolling on both axes |
+| `WrapLines` | `bool` | `true` | Wrap long lines in nonvirtualized mode; virtualized mode always disables wrapping |
+| `CollapseContent` | `bool` | `false` | Collapse the view; ignored in virtualized mode |
+| `MaxHeight` | `int` | `300` | Collapsed maximum height, or the fixed viewport height in virtualized mode (px; must be positive when virtualizing) |
 | `IgnoreCase` | `bool` | `false` | Ignore case differences |
 | `IgnoreWhiteSpace` | `bool` | `false` | Ignore whitespace differences |
 | `Header` | `RenderFragment<DiffStats>?` | `null` | Custom header template |
 | `Class` | `string?` | `null` | Additional CSS class(es) |
 
 Unmatched HTML attributes (`style`, `id`, `data-*`, etc.) are passed through to the root element.
+
+### Loading Text in Stages
+
+Use `DeferDiff` to avoid comparing intermediate inputs when loading the two sides separately:
+
+```razor
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          DeferDiff="@isLoading" />
+```
+
+Set `isLoading` to `true` before loading either side, then set it to `false` once the inputs are ready. While deferred, the component keeps the previous comparison visible (or renders no panes if it has not compared yet). Releasing deferral compares the latest texts and ignore options.
+
+Deferral is opt-in: an empty or `null` side is still a valid input for showing additions or deletions. Clearing both sides removes the previous comparison once deferral is released.
+
+### Performance
+
+The component reuses its last diff when the text values and ignore options have not changed. Presentation changes, including wrapping and virtualization, do not recompute the diff. `null` and empty strings are treated as equivalent inputs.
+
+Within each word, adjacent characters with the same change type share a highlight span. Consecutive changed whitespace is grouped too. By default all lines are rendered; enable `Virtualize` to limit rendering to the viewport.
+
+### Nonwrapping Comparisons
+
+Actual newline characters are preserved in every mode. `WrapLines` controls only whether a long source line wraps visually.
+To keep each source line on one row without enabling virtualization:
+
+```razor
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          WrapLines="false"
+          CollapseContent="true"
+          MaxHeight="500" />
+```
+
+This still renders every row, with synchronized horizontal and vertical scrolling. While collapsed, `MaxHeight` limits each pane so its horizontal scrollbar remains accessible. Expanding removes that height limit. Wrapping remains enabled by default.
+
+### Large Documents
+
+```razor
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          Virtualize="true"
+          MaxHeight="500" />
+```
+
+Virtualized mode uses Blazor's built-in `Virtualize` component in each pane. Both panes use the aligned rows from the same diff model, including empty placeholders for additions and deletions, and their horizontal and vertical scroll positions are synchronized. Each pane clamps to its own scrollable range without pulling the other pane back. Only the visible rows plus a small scrolling buffer are rendered.
+
+The panes have a fixed viewport height controlled by `MaxHeight`. `CollapseContent` is ignored and the expand button is hidden in this mode. Lines use a fixed 30 px height and do not wrap, regardless of `WrapLines`; either pane can be focused for keyboard scrolling. The panes stay side by side even on narrow screens. Keep the fixed row geometry intact when applying custom styles so the virtualizer can calculate accurate scroll positions.
+
+Virtualization reduces rendering and DOM costs, not the initial full-document diff calculation or the memory needed for the diff model. A single enormous line still needs to be compared and rendered when visible.
+
+Offscreen rows are not present in the DOM, so browser find, text selection, and printing cannot include them. Turn virtualization off and expand the view when you need the full document in the page. Existing wrapped rendering remains the default.
+
+The [large-file demo](https://lzinga.github.io/BlazorTextDiff/large-files) includes generated JSON comparisons, document-size and viewport controls, and virtualization and wrapping toggles. It also demonstrates `DeferDiff` while the inputs are generated in separate stages.
 
 ## How Character Highlighting Works
 
@@ -98,7 +164,7 @@ For example, `Programing` → `Programming`:
 
 When a word is entirely changed (e.g. `cat` → `dog`), it skips the word wrapper and uses the character-level class directly.
 
-Adjacent character highlights automatically merge into a single pill shape — rounded corners only appear on the first and last character in a run.
+Within a word, adjacent changed characters with the same change type render as a single highlighted run, preserving the pill shape without a separate span for every character.
 
 ## Customization
 
