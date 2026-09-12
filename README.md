@@ -10,6 +10,7 @@ A Blazor component for displaying side-by-side text differences with character-l
 - Adjacent character highlights merge into smooth pill shapes
 - Opt-in viewport virtualization for large documents
 - Collapse/expand the comparison viewport
+- Hide unchanged regions with configurable context and reveal buttons
 - Ignore case and whitespace options
 - Custom header with diff statistics
 - Custom CSS class and attribute support
@@ -87,6 +88,8 @@ No manual script tags or service registration are required. Virtualized and nonw
 | `DeferDiff` | `bool` | `false` | Keep the last comparison while loading inputs; set to `false` to compare the latest text and options |
 | `Virtualize` | `bool` | `false` | Render only visible, fixed-height rows with synchronized scrolling on both axes |
 | `WrapLines` | `bool` | `true` | Wrap long lines in nonvirtualized mode; virtualized mode always disables wrapping |
+| `HideUnchangedLines` | `bool` | `false` | Fold unchanged regions outside the context around changes; reveal a block from either pane |
+| `ContextLines` | `int` | `3` | Unchanged lines to retain before and after each change when folding; must be nonnegative |
 | `CollapseContent` | `bool` | `false` | Collapse the view; ignored in virtualized mode |
 | `MaxHeight` | `int` | `300` | Collapsed maximum height, or the fixed viewport height in virtualized mode (px; must be positive when virtualizing) |
 | `IgnoreCase` | `bool` | `false` | Ignore case differences |
@@ -115,6 +118,23 @@ Deferral is opt-in: an empty or `null` side is still a valid input for showing a
 The component reuses its last diff when the text values and ignore options have not changed. Presentation changes, including wrapping and virtualization, do not recompute the diff. `null` and empty strings are treated as equivalent inputs.
 
 Within each word, adjacent characters with the same change type share a highlight span. Consecutive changed whitespace is grouped too. By default all lines are rendered; enable `Virtualize` to limit rendering to the viewport.
+
+### Hide Unchanged Lines
+
+```razor
+<TextDiff OldText="@oldText"
+          NewText="@newText"
+          HideUnchangedLines="true"
+          ContextLines="3" />
+```
+
+Regions that are unchanged on both sides are replaced by **Show N unchanged lines** buttons, keeping the requested context around every change. Revealing a block from either pane reveals it on both sides. Original line numbers and header statistics continue to describe the full comparison.
+
+`ContextLines="0"` shows only changed lines and hidden-region buttons. An entirely unchanged comparison becomes one revealable block per pane. Empty-side comparisons still show additions or deletions, and the ignore options determine which lines count as unchanged.
+
+Revealed blocks remain open during ordinary parent rerenders and wrapping, height, or virtualization changes. New comparison inputs, ignore options, or folding settings reset the hidden regions. While `DeferDiff` is true, folding options apply to the last completed comparison.
+
+Folding works in wrapped, nonwrapping, and virtualized modes. It is separate from `CollapseContent`, which only limits the viewport height. Virtualization renders the folded row list, including fixed-height hidden-region buttons, rather than leaving gaps for hidden source lines. Neither option avoids calculating the full diff.
 
 ### Nonwrapping Comparisons
 
@@ -146,7 +166,7 @@ The panes have a fixed viewport height controlled by `MaxHeight`. `CollapseConte
 
 Virtualization reduces rendering and DOM costs, not the initial full-document diff calculation or the memory needed for the diff model. A single enormous line still needs to be compared and rendered when visible.
 
-Offscreen rows are not present in the DOM, so browser find, text selection, and printing cannot include them. Turn virtualization off and expand the view when you need the full document in the page. Existing wrapped rendering remains the default.
+Offscreen and folded rows are not present in the DOM, so browser find, text selection, and printing cannot include them. Turn virtualization and `HideUnchangedLines` off and expand the view when you need the full document in the page. Existing wrapped rendering remains the default.
 
 The [large-file demo](https://lzinga.github.io/BlazorTextDiff/large-files) includes generated JSON comparisons, document-size and viewport controls, and virtualization and wrapping toggles. It also demonstrates `DeferDiff` while the inputs are generated in separate stages.
 

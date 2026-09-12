@@ -14,7 +14,8 @@
    @if ((Virtualize || !WrapLines) && diff is not null)
    {
       <ScrollableTextDiff Model="diff" Virtualize="@Virtualize"
-                          CollapseContent="@isCollapsed" MaxHeight="@MaxHeight" />
+                          CollapseContent="@isCollapsed" MaxHeight="@MaxHeight"
+                          DisplayRows="@displayRows" OnShowHiddenLines="@ShowHiddenLines" />
    }
    else
    {
@@ -23,10 +24,12 @@
             @if (diff is not null)
             {
                <div class="diff-pane">
-                  <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"></TextDiffPane>
+                  <TextDiffPane Model="diff.OldText" PanePosition="@PanePosition.Left"
+                                DisplayRows="@displayRows" OnShowHiddenLines="@ShowHiddenLines" />
                </div>
                <div class="diff-pane">
-                  <TextDiffPane Model="diff.NewText" PanePosition="@PanePosition.Right"></TextDiffPane>
+                  <TextDiffPane Model="diff.NewText" PanePosition="@PanePosition.Right"
+                                DisplayRows="@displayRows" OnShowHiddenLines="@ShowHiddenLines" />
                </div>
             }
          </div>
@@ -75,6 +78,18 @@
     [Parameter] public bool WrapLines { get; set; } = true;
 
     /// <summary>
+    /// Hide unchanged regions outside the context around changes.
+    /// Hidden regions can be revealed from either pane.
+    /// </summary>
+    [Parameter] public bool HideUnchangedLines { get; set; }
+
+    /// <summary>
+    /// The number of unchanged lines to retain before and after each change.
+    /// Must be nonnegative. Only affects display when HideUnchangedLines is true.
+    /// </summary>
+    [Parameter] public int ContextLines { get; set; } = 3;
+
+    /// <summary>
     /// The text before any changes.
     /// </summary>
     [Parameter] public string? OldText { get; set; }
@@ -109,6 +124,11 @@
     private bool isCollapsed;
     private bool? previousCollapseContent;
     private DiffInputs? previousInputs;
+    private SideBySideDiffModel? visibilityModel;
+    private bool? previousHideUnchangedLines;
+    private int previousContextLines;
+    private bool[]? visibleLines;
+    private List<DiffDisplayRow>? displayRows;
 
     private readonly record struct DiffInputs(
         string OldText, string NewText, bool IgnoreCase, bool IgnoreWhiteSpace);
@@ -120,6 +140,7 @@
    {
       if (Virtualize)
          ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxHeight);
+      ArgumentOutOfRangeException.ThrowIfNegative(ContextLines);
 
       if (previousCollapseContent != CollapseContent)
       {
@@ -127,9 +148,14 @@
          previousCollapseContent = CollapseContent;
       }
 
-      if (DeferDiff)
-         return;
+      if (!DeferDiff)
+         UpdateDiff();
 
+      UpdateVisibility();
+   }
+
+   private void UpdateDiff()
+   {
       var inputs = new DiffInputs(
          OldText ?? string.Empty, NewText ?? string.Empty, IgnoreCase, IgnoreWhiteSpace);
       if (previousInputs == inputs)
@@ -160,6 +186,83 @@
 
       diff = nextDiff;
       previousInputs = inputs;
+   }
+
+   private void UpdateVisibility()
+   {
+      if (ReferenceEquals(visibilityModel, diff)
+          && previousHideUnchangedLines == HideUnchangedLines
+          && previousContextLines == ContextLines)
+         return;
+
+      if (diff is null || !HideUnchangedLines)
+      {
+         visibleLines = null;
+         displayRows = null;
+      }
+      else
+      {
+         var count = diff.OldText.Lines.Count;
+         visibleLines = new bool[count];
+         var lastChange = -1;
+
+         // Two linear passes avoid repeatedly scanning overlapping context ranges.
+         for (var i = 0; i < count; i++)
+         {
+            if (IsChangedRow(i))
+               lastChange = i;
+            visibleLines[i] = lastChange >= 0 && i - lastChange <= ContextLines;
+         }
+
+         var nextChange = -1;
+         for (var i = count - 1; i >= 0; i--)
+         {
+            if (IsChangedRow(i))
+               nextChange = i;
+            if (nextChange >= 0 && nextChange - i <= ContextLines)
+               visibleLines[i] = true;
+         }
+
+         displayRows = BuildDisplayRows(visibleLines);
+
+         bool IsChangedRow(int index) =>
+            diff.OldText.Lines[index].Type != ChangeType.Unchanged
+            || diff.NewText.Lines[index].Type != ChangeType.Unchanged;
+      }
+
+      visibilityModel = diff;
+      previousHideUnchangedLines = HideUnchangedLines;
+      previousContextLines = ContextLines;
+   }
+
+   private static List<DiffDisplayRow> BuildDisplayRows(bool[] visibility)
+   {
+      var rows = new List<DiffDisplayRow>();
+      for (var i = 0; i < visibility.Length;)
+      {
+         if (visibility[i])
+         {
+            rows.Add(new DiffDisplayRow(i));
+            i++;
+            continue;
+         }
+
+         var start = i;
+         while (i < visibility.Length && !visibility[i])
+            i++;
+         rows.Add(new DiffDisplayRow(start, i - start));
+      }
+      return rows;
+   }
+
+   private void ShowHiddenLines(DiffDisplayRow row)
+   {
+      // A queued click may belong to a comparison or context setting that was replaced.
+      if (visibleLines is null || displayRows is null || !row.IsHidden || !displayRows.Contains(row))
+         return;
+
+      Array.Fill(visibleLines, true, row.LineIndex, row.HiddenLineCount);
+      displayRows = BuildDisplayRows(visibleLines);
    }
 
    /// <summary>

@@ -59,6 +59,8 @@ else
               CollapseContent="@collapseContent"
               MaxHeight="@maxHeight"
               WrapLines="@wrapLines"
+              HideUnchangedLines="@hideUnchangedLines"
+              ContextLines="@contextLines"
               IgnoreCase="@ignoreCase"
               IgnoreWhiteSpace="@ignoreWhiteSpace"
               Class="demo-diff"
@@ -96,7 +98,7 @@ else
 </details>
 
 <details id="display-options" class="demo-disclosure">
-    <summary>Display options <span class="summary-hint">Wrapping &amp; height</span></summary>
+    <summary>Display options <span class="summary-hint">Wrapping, height &amp; unchanged lines</span></summary>
     <div class="disclosure-body">
         <div class="controls-row">
             <div class="check-control">
@@ -117,6 +119,22 @@ else
             </div>
         </div>
         <p id="display-help" class="helper-text control-hint">Wrapping changes only how long lines fit on screen; source line breaks stay intact. A height limit adds <strong>Show more</strong> / <strong>Show less</strong> controls. It does not hide unchanged lines.</p>
+        <div class="controls-row">
+            <div class="check-control">
+                <input id="playground-hide-unchanged" type="checkbox" @bind="hideUnchangedLines" aria-describedby="playground-folding-help" />
+                <label for="playground-hide-unchanged">Hide unchanged lines</label>
+            </div>
+            <div class="control-field">
+                <label for="playground-context" class="control-label">Context lines</label>
+                <select id="playground-context" class="form-control form-control-sm" @bind="contextLines" disabled="@(!hideUnchangedLines)">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+        </div>
+        <p id="playground-folding-help" class="helper-text control-hint">Keep this many unchanged lines around each change and fold the rest. A <strong>Show unchanged lines</strong> button reveals a block in both panes. Try zero context on a short sample; line numbers and totals still refer to the full comparison.</p>
         <p class="helper-text">For large documents and synchronized scrolling, try the <a href="large-files">large-file demo</a>.</p>
     </div>
 </details>
@@ -205,6 +223,8 @@ RetryLimit = 3")
     private bool wrapLines = true;
     private bool collapseContent;
     private int maxHeight = 360;
+    private bool hideUnchangedLines;
+    private int contextLines = 3;
 
     private Sample SelectedSample => Samples.First(sample => sample.Id == sampleId);
     private bool HasPendingEdits => draftOldText != oldText || draftNewText != newText;
@@ -228,6 +248,8 @@ RetryLimit = 3")
           IgnoreCase=""{ignoreCase.ToString().ToLowerInvariant()}""
           IgnoreWhiteSpace=""{ignoreWhiteSpace.ToString().ToLowerInvariant()}""
           WrapLines=""{wrapLines.ToString().ToLowerInvariant()}""
+          HideUnchangedLines=""{hideUnchangedLines.ToString().ToLowerInvariant()}""
+          ContextLines=""{contextLines}""
           CollapseContent=""{collapseContent.ToString().ToLowerInvariant()}""
           MaxHeight=""{maxHeight}"" />";
 

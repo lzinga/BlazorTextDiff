@@ -7,12 +7,14 @@
     <div class="diff-pane">
         <TextDiffPane Model="@Model.OldText" PanePosition="@PanePosition.Left"
                       Virtualize="@Virtualize" WrapLines="false" CollapseContent="@CollapseContent"
-                      MaxHeight="@MaxHeight" @ref="leftPane" />
+                      MaxHeight="@MaxHeight" DisplayRows="@DisplayRows"
+                      OnShowHiddenLines="@OnShowHiddenLines" @ref="leftPane" />
     </div>
     <div class="diff-pane">
         <TextDiffPane Model="@Model.NewText" PanePosition="@PanePosition.Right"
                       Virtualize="@Virtualize" WrapLines="false" CollapseContent="@CollapseContent"
-                      MaxHeight="@MaxHeight" @ref="rightPane" />
+                      MaxHeight="@MaxHeight" DisplayRows="@DisplayRows"
+                      OnShowHiddenLines="@OnShowHiddenLines" @ref="rightPane" />
     </div>
 </div>
 
@@ -21,6 +23,8 @@
     [Parameter] public bool Virtualize { get; set; }
     [Parameter] public bool CollapseContent { get; set; }
     [Parameter] public int MaxHeight { get; set; } = 300;
+    [Parameter] public ICollection<DiffDisplayRow>? DisplayRows { get; set; }
+    [Parameter] public EventCallback<DiffDisplayRow> OnShowHiddenLines { get; set; }
 
     private TextDiffPane leftPane = default!;
     private TextDiffPane rightPane = default!;

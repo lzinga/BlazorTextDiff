@@ -46,7 +46,7 @@
     }
     else
     {
-        <span>All rows are rendered, even outside the height limit. Large samples can take longer to display. Use <strong>Show more</strong> to remove the height limit.</span>
+        <span>All displayed rows are rendered, even outside the height limit. Large samples can take longer to display. Use <strong>Show more</strong> to remove the height limit.</span>
     }
 </p>
 
@@ -75,6 +75,8 @@
           DeferDiff="@isLoading"
           Virtualize="@virtualize"
           WrapLines="@WrapLongLines"
+          HideUnchangedLines="@hideUnchangedLines"
+          ContextLines="@contextLines"
           MaxHeight="@viewportHeight"
           CollapseContent="true"
           Class="demo-diff"
@@ -96,14 +98,37 @@
     }
 </p>
 
+<details id="large-file-folding" class="demo-disclosure">
+    <summary>Hide unchanged lines <span class="summary-hint">Focus on changes and nearby context</span></summary>
+    <div class="disclosure-body">
+        <div class="controls-row">
+            <div class="check-control">
+                <input id="large-file-hide-unchanged" type="checkbox" @bind="hideUnchangedLines" disabled="@isLoading" aria-describedby="large-file-folding-help" />
+                <label for="large-file-hide-unchanged">Hide unchanged lines</label>
+            </div>
+            <div class="control-field">
+                <label for="large-file-context" class="control-label">Context lines</label>
+                <select id="large-file-context" class="form-control form-control-sm" @bind="contextLines" disabled="@(isLoading || !hideUnchangedLines)">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="3">3</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+        </div>
+        <p id="large-file-folding-help" class="helper-text control-hint">Keep unchanged context before and after each change. The remaining blocks become buttons that reveal their lines in both panes. This works with or without virtualization and does not change the line numbers or full-comparison totals.</p>
+        <p class="helper-text">Revealed blocks stay open while changing wrapping or viewport height. New texts, ignore options, or folding settings reset the hidden regions.</p>
+    </div>
+</details>
+
 <details id="rendering-guide" class="demo-disclosure">
     <summary>Which rendering mode should I use? <span class="summary-hint">Performance, selection &amp; scrolling</span></summary>
     <div class="disclosure-body">
         <dl class="note-list">
             <dt>Virtualized: fewer rows in the page</dt>
             <dd>Only visible rows and a small buffer exist in the DOM. Rows have a fixed height and never wrap. <code>MaxHeight</code> sets the viewport height; <code>CollapseContent</code> is ignored, so there is no expand button.</dd>
-            <dt>All rows: the complete text is rendered</dt>
-            <dd>Turn virtualization off for full-document browser find, selection, or printing. Expand the view with <strong>Show more</strong> when you need to see the full result. Rendering 20,000 records in this mode can pause the page.</dd>
+            <dt>Nonvirtualized: all displayed rows are rendered</dt>
+            <dd>Turn virtualization and <strong>Hide unchanged lines</strong> off for full-document browser find, selection, or printing. Expand the view with <strong>Show more</strong> when you need to see the full result. Rendering 20,000 records in this mode can pause the page.</dd>
             <dt>Rendering is not diff calculation</dt>
             <dd>Both modes compute the full diff up front and keep its model in memory. Virtualization reduces rendering work; it does not speed up the comparison algorithm or move it off the UI thread.</dd>
             <dt>Wrapping is a display choice</dt>
@@ -134,6 +159,8 @@
     private int viewportHeight = 300;
     private bool virtualize = true;
     private bool wrapLines = true;
+    private bool hideUnchangedLines;
+    private int contextLines = 3;
     private bool isLoading = true;
     private string loadingMessage = "Preparing the original JSON…";
     private string? oldText;
@@ -151,6 +178,8 @@
           DeferDiff=""@isLoading""
           Virtualize=""{virtualize.ToString().ToLowerInvariant()}""
           WrapLines=""{WrapLongLines.ToString().ToLowerInvariant()}""
+          HideUnchangedLines=""{hideUnchangedLines.ToString().ToLowerInvariant()}""
+          ContextLines=""{contextLines}""
           CollapseContent=""true""
           MaxHeight=""{viewportHeight}"" />";
 
