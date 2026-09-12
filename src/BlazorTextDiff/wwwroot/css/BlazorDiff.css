@@ -555,3 +555,32 @@ table.diff td.line-number:focus {
   word-break: normal;
   overflow-wrap: normal;
 }
+
+.diff-container table.diff .diff-hidden-summary td {
+  background-color: var(--diff-bg-tertiary);
+  color: var(--diff-text-muted);
+}
+
+.diff-show-hidden {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--diff-text-accent);
+  font: inherit;
+  line-height: inherit;
+  white-space: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.diff-show-hidden:hover {
+  color: var(--diff-text-primary);
+}
+
+.diff-show-hidden:focus-visible {
+  outline: 2px solid var(--diff-text-accent);
+  outline-offset: 2px;
+}

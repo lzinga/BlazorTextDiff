@@ -2,14 +2,33 @@
 
 <div class="@CssClass"
      style="@ViewportStyle"
-     tabindex="@(IsScrollable ? 0 : (int?)null)"
-     role="@(IsScrollable ? "region" : null)"
-     aria-label="@(IsScrollable ? (PanePosition == PanePosition.Left ? "Original text" : "Modified text") : null)"
+     tabindex="@(IsScrollable ? 0 : HasFocusTarget ? -1 : (int?)null)"
+     role="@(HasFocusTarget ? "region" : null)"
+     aria-label="@(HasFocusTarget ? (PanePosition == PanePosition.Left ? "Original text" : "Modified text") : null)"
      @ref="ScrollElement">
     <table class="diff">
         @if (Model?.Lines is not null)
         {
-            @if (Virtualize)
+            @if (DisplayRows is not null)
+            {
+                <tbody>
+                    @if (Virtualize)
+                    {
+                        <Virtualize Items="@DisplayRows"
+                                    ItemSize="@VirtualizedRowHeight"
+                                    SpacerElement="tr"
+                                    ItemContent="@RenderDisplayRow" />
+                    }
+                    else
+                    {
+                        @foreach (var row in DisplayRows)
+                        {
+                            @RenderDisplayRow(row)
+                        }
+                    }
+                </tbody>
+            }
+            else if (Virtualize)
             {
                 <tbody>
                     <Virtualize Items="@Model.Lines"
@@ -36,11 +55,14 @@
     [Parameter] public bool WrapLines { get; set; } = true;
     [Parameter] public bool CollapseContent { get; set; }
     [Parameter] public int MaxHeight { get; set; } = 300;
+    [Parameter] public ICollection<DiffDisplayRow>? DisplayRows { get; set; }
+    [Parameter] public EventCallback<DiffDisplayRow> OnShowHiddenLines { get; set; }
 
     internal ElementReference ScrollElement { get; private set; }
 
     private const int VirtualizedRowHeight = 30;
     private bool IsScrollable => Virtualize || !WrapLines;
+    private bool HasFocusTarget => IsScrollable || DisplayRows is not null;
     private string CssClass => $"diff-pane-{PanePosition.ToString().ToLowerInvariant()}"
         + (IsScrollable ? " diff-scroll-pane" : string.Empty)
         + (Virtualize ? " diff-virtualized-pane" : !WrapLines ? " diff-nowrap-pane" : string.Empty);
@@ -52,6 +74,27 @@
     {
         if (Virtualize)
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(MaxHeight);
+    }
+
+    private RenderFragment RenderDisplayRow(DiffDisplayRow row)
+    {
+        if (!row.IsHidden)
+            return RenderLine(Model.Lines[row.LineIndex]);
+
+        var label = $"Show {row.HiddenLineCount:N0} unchanged {(row.HiddenLineCount == 1 ? "line" : "lines")}";
+        return @<tr class="diff-row diff-hidden-summary">
+            <td class="line-number"><span aria-hidden="true">...</span></td>
+            <td class="line">
+                <button type="button" class="diff-show-hidden" title="@label"
+                        @onclick="() => RevealRowAsync(row)">@label</button>
+            </td>
+        </tr>;
+    }
+
+    private async Task RevealRowAsync(DiffDisplayRow row)
+    {
+        await OnShowHiddenLines.InvokeAsync(row);
+        await ScrollElement.FocusAsync(preventScroll: true);
     }
 
     private readonly RenderFragment<DiffPiece> RenderLine = diffLine => @<tr class="diff-row">
